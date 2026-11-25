@@ -1,5 +1,5 @@
 // Keeps the app available offline. Bump the version when you change files.
-const CACHE = "parle-moi-v4";
+const CACHE = "parle-moi-v5";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

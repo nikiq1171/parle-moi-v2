@@ -163,6 +163,44 @@ textarea{width:100%;margin-top:12px;padding:12px;border-radius:12px;border:1px s
 .modal-bg{position:fixed;inset:0;background:rgba(5,10,20,.5);z-index:60;display:grid;place-items:center;padding:16px}
 .modal{background:var(--surface);border-radius:20px;padding:22px 20px;max-width:440px;width:100%;max-height:80vh;overflow-y:auto}
 .modal ul{padding-left:20px;margin:8px 0 0}.modal li{margin-bottom:6px}
+/* ---- Examen ---- */
+.ex-tags{display:flex;gap:8px;margin-bottom:12px}
+.ex-tag{border:1px solid color-mix(in srgb,var(--miss) 45%,transparent);background:var(--miss-soft);color:var(--miss);border-radius:999px;padding:4px 12px;font-size:.85rem;font-weight:600}
+.ex-h1{font:700 2.1rem/1.1 var(--sans);letter-spacing:-.02em;margin:0 0 12px}
+.ex-lead{color:var(--muted);font-size:1.02rem}
+.ex-h2{font:700 1.35rem var(--sans);margin:26px 0 12px}
+.ex-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:600px){.ex-grid{grid-template-columns:1fr 1fr}}
+.ex-card{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;color:var(--ink);font:inherit;display:flex;flex-direction:column;gap:10px}
+.ex-card:hover{border-color:var(--blue)}
+.ex-card-top{display:flex;gap:12px;align-items:center}
+.ex-ico{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue)}
+.ex-name{font-weight:700;font-size:1.05rem;margin:0}
+.ex-meta{display:flex;flex-wrap:wrap;gap:12px;margin:4px 0 0;color:var(--muted);font-size:.88rem}
+.ex-meta span{display:inline-flex;align-items:center;gap:4px}
+.ex-meta .pts{color:var(--miss)}
+.ex-desc{color:var(--muted);font-size:.92rem;margin:0}
+.ex-last{margin:0;font-size:.9rem;border-top:1px solid var(--line);padding-top:10px}
+.sc.high{color:var(--ok)}.sc.mid{color:var(--miss)}.sc.low{color:var(--rec)}
+.ex-total{display:flex;gap:16px;align-items:center;border-radius:16px;padding:14px 16px;background:var(--surface);border:1px solid var(--line)}
+.ex-total.pass{border-color:var(--ok)}.ex-total.fail{border-color:var(--miss)}
+.ex-big{font:600 2.2rem/1 var(--serif);margin:2px 0 0;white-space:nowrap}
+.ex-big small{font-size:1rem;color:var(--muted)}
+.ex-banner{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--blue-soft);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:.92rem}
+.spark{width:100%;height:auto;display:block}
+.spark .line{fill:none;stroke:var(--blue);stroke-width:2.5;stroke-linejoin:round}
+.spark .dot{fill:var(--blue)}
+.spark .mid-line{stroke:var(--line);stroke-dasharray:4 4}
+.hist-row{border-bottom:1px solid var(--line)}
+.hist-row summary{display:flex;justify-content:space-between;padding:11px 0;cursor:pointer;list-style:none}
+.hist-row summary::-webkit-details-marker{display:none}
+.hist-body{padding:0 0 12px}
+table.grid{width:100%;border-collapse:collapse;margin:6px 0 12px;font-size:.93rem}
+table.grid td{padding:7px 0;border-bottom:1px solid var(--line);vertical-align:top}
+table.grid td:last-child{text-align:right;white-space:nowrap;font-weight:600;padding-left:10px}
+.ce-text p{margin:0 0 10px;font-size:1.08rem}
+.p-timer{font-size:1rem;color:var(--muted);min-width:4.5em;text-align:right}
+.p-timer.over{color:var(--rec);font-size:.85rem}
 /* ---- Lecteur ---- */
 .player{position:fixed;inset:0;background:var(--bg);z-index:50;display:none;flex-direction:column}
 .player.open{display:flex}
@@ -357,8 +395,15 @@ textarea{width:100%;margin-top:12px;padding:12px;border-radius:12px;border:1px s
     </div>
   </section>
 
+  <!-- EXAMEN -->
+  <section class="panel" id="examen">
+    <div id="exHub"></div>
+    <div id="exDetail" hidden></div>
+  </section>
+
   <!-- ORAL -->
   <section class="panel" id="oral">
+    <div id="orBanner"></div>
     <div class="chips" id="orChips"></div>
     <div class="card" id="orIntro"></div>
     <div class="card" id="orSession" hidden>
@@ -412,7 +457,7 @@ textarea{width:100%;margin-top:12px;padding:12px;border-radius:12px;border:1px s
 </div>
 
 <div class="player" id="player" role="dialog" aria-modal="true" aria-label="Leçon">
-  <div class="p-top"><button class="p-close" id="pClose" aria-label="Fermer">×</button><div class="p-bar"><i id="pBar"></i></div></div>
+  <div class="p-top"><button class="p-close" id="pClose" aria-label="Fermer">×</button><div class="p-bar"><i id="pBar"></i></div><span class="timer p-timer" id="pTimer" hidden></span></div>
   <div class="p-body" id="pBody"></div>
   <div class="p-foot" id="pFoot"><div class="p-foot-in"><div class="p-fb" id="pFb" aria-live="polite"></div><div class="p-btns"><button class="btn" id="pSkip" hidden></button><button class="p-main" id="pMain">Continuer</button></div></div></div>
 </div>
@@ -704,22 +749,24 @@ $("keyTest").onclick = async () => {
 const parseJSON = t => JSON.parse(t.replace(/```json|```/g,"").trim());
 
 /* Onglets */
-const GROUPS = {parcours:[["parcours","Parcours"]], tests:[["niveau","Test de niveau"],["vocab","Vocabulaire"]], examen:[["oral","Oral"],["ecoute","Écoute"]], accent:[["bilan","Bilan"],["sons","Sons"]]};
-const lastPanel = {parcours:"parcours", tests:"niveau", examen:"oral", accent:"bilan"};
+const GROUPS = {parcours:[["parcours","Parcours"]], tests:[["niveau","Test de niveau"],["vocab","Vocabulaire"]], examen:[["examen","Examen"],["oral","Oral",true],["ecoute","Écoute",true]], accent:[["bilan","Bilan"],["sons","Sons"]]};
+const lastPanel = {parcours:"parcours", tests:"niveau", examen:"examen", accent:"bilan"};
 const groupOf = p => Object.keys(GROUPS).find(g => GROUPS[g].some(x => x[0] === p));
 function goTab(name){
   stopAll();
   const g = groupOf(name); lastPanel[g] = name;
   document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x.dataset.group === g));
   const sub = $("subnav");
-  sub.hidden = GROUPS[g].length < 2;
-  sub.innerHTML = GROUPS[g].map(([id,label]) => `<button class="chip" aria-pressed="${id === name}" data-p="${id}">${label}</button>`).join("");
+  const vis = GROUPS[g].filter(x => !x[2]);
+  sub.hidden = vis.length < 2;
+  sub.innerHTML = vis.map(([id,label]) => `<button class="chip" aria-pressed="${id === name}" data-p="${id}">${label}</button>`).join("");
   sub.querySelectorAll(".chip").forEach(c => c.onclick = () => goTab(c.dataset.p));
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === name));
   if (name === "parcours" && typeof renderTree === "function") renderTree();
+  if (name === "examen" && typeof renderExam === "function") renderExam();
   window.scrollTo({top:0, behavior:"smooth"});
 }
-document.querySelectorAll(".tab").forEach(t => t.onclick = () => goTab(lastPanel[t.dataset.group]));
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => { if (t.dataset.group === "examen" && typeof fullMode !== "undefined" && fullMode && lastPanel.examen === "oral") return goTab("oral"); goTab(lastPanel[t.dataset.group]); });
 
 /* =================== BILAN =================== */
 const BI_ITEMS = SOUNDS.flatMap(s => s.sents.map(x => ({...x, sound:s.id})));
@@ -861,6 +908,13 @@ function sysFor(){
   return EXAM_BASE + `\nPartie 3, expression d'un point de vue. Document lu par le candidat : « ${docu.t} » ${docu.p}\nLe candidat vient de faire son exposé. Pose-lui une seule question à la fois pour qu'il précise, défende ou nuance son opinion, avec des exemples concrets. Tu peux jouer l'avocat du diable. Après 3 ou 4 questions, remercie-le et dis que l'épreuve est terminée.`;
 }
 function orRenderChips(){
+  $("orChips").hidden = fullMode;
+  $("orBanner").innerHTML = fullMode
+    ? `<div class="ex-banner"><span><b>Épreuve complète</b> · partie ${part.id} sur 3 · notée sur 25</span><button class="btn" id="orAbandon" style="padding:5px 10px;font-size:.85rem">Quitter</button></div>`
+    : `<button class="btn" id="orToExam" style="margin-bottom:12px">← Examen</button>`;
+  if ($("orAbandon")) $("orAbandon").onclick = () => { if (confirm("Quit the full test? This attempt won't be graded.")) { stopAll(); clearInterval(timerId); exitOralFull(); } };
+  if ($("orToExam")) $("orToExam").onclick = () => { stopAll(); clearInterval(timerId); exView = "PO"; goTab("examen"); };
+  $("orEnd").textContent = fullMode ? (part.id < 3 ? "Partie suivante →" : "Terminer et noter /25") : "Terminer et évaluer";
   $("orChips").innerHTML = PARTS.map(p => `<button class="chip" aria-pressed="${p.id===part.id}" data-id="${p.id}">${esc(p.name)}</button>`).join("");
   $("orChips").querySelectorAll(".chip").forEach(c => c.onclick = () => { if (busy) return; part = PARTS.find(p => p.id === +c.dataset.id); orReset(); });
 }
@@ -907,8 +961,8 @@ function addLog(cls, text, click){
 }
 function startSession(){
   clearInterval(timerId);
-  $("orIntro").hidden = part.id !== 3;
-  if (part.id === 3){ $("orGo").hidden = true; $("orPrep").innerHTML = ""; const sh = $("orShuffle"); if (sh) sh.hidden = true; }
+  $("orIntro").hidden = part.id === 1;
+  if (part.id !== 1){ $("orGo").hidden = true; $("orPrep").innerHTML = ""; const sh = $("orShuffle"); if (sh) sh.hidden = true; }
   $("orSession").hidden = false; $("orEval").hidden = true;
   $("orLog").innerHTML = ""; $("orLive").classList.remove("show"); history = [];
   startTimer($("orTimer"), 0, false);
@@ -953,10 +1007,17 @@ $("orMic").onclick = () => {
     } else examinerTurn(text);
   });
 };
-$("orQuit").onclick = () => { if (!busy) orReset(); };
+$("orQuit").onclick = () => { if (busy) return; if (fullMode){ $("orAbandon").click(); return; } orReset(); };
 $("orEnd").onclick = async () => {
   if (busy) return;
   stopAll(); clearInterval(timerId);
+  if (fullMode){
+    const tr = history.filter(m => !m.content.startsWith("(Début")).map(m => (m.role === "user" ? "Candidat : " : "Examinateur : ") + m.content.replace("[Exposé du candidat] ","")).join("\n");
+    if (!history.some(m => m.role === "user" && !m.content.startsWith("(Début")) && !confirm("You haven't answered in this part. Continue anyway? It will score 0.")) return;
+    fullLog.push({name:part.name, ctx: part.id === 2 ? `Situation : ${scen.sit}` : part.id === 3 ? `Document : ${docu.t}. ${docu.p}` : "", transcript:tr});
+    if (part.id < 3){ part = PARTS[part.id]; scen = null; docu = null; orReset(); window.scrollTo({top:0, behavior:"smooth"}); return; }
+    return gradeOralFull();
+  }
   const transcript = history.filter(m => !m.content.startsWith("(Début"))
     .map(m => (m.role === "user" ? "Candidat : " : "Examinateur : ") + m.content.replace("[Exposé du candidat] ","")).join("\n");
   if (!history.some(m => m.role === "user" && !m.content.startsWith("(Début"))){
@@ -1172,7 +1233,7 @@ function openSheet(n){
   let h = `<p class="hint" style="margin:0 0 4px">Unité ${n.unit.id}, niveau ${n.unit.level}</p><h2>${esc(n.theme)}</h2>`;
   if (n.kind === "lesson") h += `<p><b>Temps :</b> ${esc(n.grammar)} <span class="hint">≈ ${esc(n.en)}</span></p><p class="hint">Goal: ${esc(n.can)}.</p>`;
   if (n.kind === "cp") h += `<p>A 12-question test covering the whole unit, with listening and speaking. Score 80 % to unlock the next unit.</p>`;
-  if (n.kind === "exam") h += `<p>Practise the real DELF B1 oral exam (3 parts) and the listening test.</p>`;
+  if (n.kind === "exam") h += `<p>Practise all four sections of the DELF B1, each graded out of 25.</p>`;
   if (st === "locked" && n.kind !== "exam") h += `<p class="hint">Finish the previous step to unlock this one, or take the level test (Tests tab) to skip ahead.</p>`;
   if (st === "skipped") h += `<p class="hint">Skipped thanks to the level test. You can still do it.</p>`;
   if (r && r.attempts) h += `<p>Meilleur score : <b>${r.best} %</b> (${r.attempts} essai${r.attempts > 1 ? "s" : ""})</p>`;
@@ -1184,8 +1245,7 @@ function openSheet(n){
   }
   const btns = [];
   if (n.kind === "exam"){
-    btns.push(["Examen oral", () => { closeSheet(); goTab("oral"); }, true]);
-    btns.push(["Compréhension orale", () => { closeSheet(); goTab("ecoute"); }]);
+    btns.push(["Ouvrir l'examen blanc", () => { closeSheet(); exView = null; goTab("examen"); }, true]);
   } else if (st !== "locked"){
     const hasDiff = r && (r.mistakes.length || r.words.length);
     if (n.kind === "lesson"){
@@ -1217,7 +1277,9 @@ function openPlayer(steps){ PL.steps = steps; PL.i = 0; PL.final = false; shellO
 function closePlayer(){
   PL.token++; stopAll();
   $("player").classList.remove("open"); document.body.style.overflow = "";
+  stopExamTimer();
   renderTree(); renderTests();
+  if ($("examen").classList.contains("active")) renderExam();
 }
 $("pClose").onclick = () => { if (PL.final || !PL.steps.length || confirm("Quitter ? Tu pourras reprendre la leçon plus tard.")) closePlayer(); };
 function resetFoot(){ $("pFoot").className = "p-foot"; $("pFb").innerHTML = ""; $("pFb").style.display = "none"; $("pSkip").hidden = true; }
@@ -1828,10 +1890,327 @@ const vocabResultStep = c => body => {
   foot("Terminer", closePlayer);
 };
 
+
+/* =================== EXAMEN BLANC =================== */
+const EXI = {
+  head:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="7" rx="1.5"/><rect x="17" y="14" width="4" height="7" rx="1.5"/></svg>',
+  book:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z"/></svg>',
+  pen:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  target:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>'
+};
+const SECTIONS = [
+  {id:"CO", fr:"Compréhension de l'oral", en:"Listening comprehension", icon:EXI.head, time:"25 min", mins:25,
+   desc:"Three audio documents (message, interview, radio report). Each is played twice. Multiple-choice questions on the main idea and details."},
+  {id:"CE", fr:"Compréhension des écrits", en:"Reading comprehension", icon:EXI.book, time:"45 min", mins:45,
+   desc:"Two written documents: a practical text and a press article. Questions on explicit and implicit information."},
+  {id:"PE", fr:"Production écrite", en:"Writing", icon:EXI.pen, time:"45 min", mins:45,
+   desc:"One writing task of 160 to 180 words: a letter, a forum post or an opinion piece. Graded on the DELF B1 writing grid."},
+  {id:"PO", fr:"Production orale", en:"Speaking", icon:EXI.mic, time:"15 min + 10 min prep", mins:25,
+   desc:"Guided interview, role-play with the examiner, and your point of view on a short document. All three parts are graded together."}
+];
+const secOf = id => SECTIONS.find(s => s.id === id);
+const exRecs = id => { PG.exams = PG.exams || {}; return PG.exams[id] || (PG.exams[id] = []); };
+const fmtScore = x => (Math.round(x * 2) / 2).toLocaleString("fr-FR");
+const fmtDate = d => new Date(d).toLocaleString("fr-FR", {day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"});
+function saveExam(id, score, detail){
+  const s = Math.max(0, Math.min(25, Math.round(score * 2) / 2));
+  exRecs(id).push({date:new Date().toISOString(), score:s, detail});
+  bumpStreak(); PG.xp += 15; savePG();
+  return s;
+}
+const scoreClass = s => s < 5 ? "low" : s < 12.5 ? "mid" : "high";
+let exView = null;
+
+function renderExam(){
+  if (exView) return renderExamDetail(exView);
+  $("exDetail").hidden = true; $("exHub").hidden = false;
+  const last = SECTIONS.map(s => { const r = exRecs(s.id); return r.length ? r[r.length - 1] : null; });
+  let summary;
+  if (last.every(Boolean)){
+    const total = last.reduce((a, r) => a + r.score, 0), ok = total >= 50 && last.every(r => r.score >= 5);
+    summary = `<div class="ex-total ${ok ? "pass" : "fail"}"><div><p class="hint" style="margin:0">Latest total</p><p class="ex-big">${fmtScore(total)}<small> / 100</small></p></div>
+      <p style="margin:0">${ok ? "<b>Passing.</b> You'd pass with these scores." : "<b>Not passing yet.</b>"} To pass the DELF you need 50/100 overall and at least 5/25 in each section.</p></div>`;
+  } else summary = `<p class="hint">Complete all four sections to see your total out of 100. To pass, you need 50/100 overall and at least 5/25 in each section.</p>`;
+  $("exHub").innerHTML = `<div class="ex-tags"><span class="ex-tag"><b>B1</b> Intermédiaire</span><span class="ex-tag">Examen blanc</span></div>
+    <h1 class="ex-h1">Examen blanc DELF B1</h1>
+    <p class="ex-lead">Practise each section of the exam on its own. Every section is graded out of 25, and your scores are saved so you can track your progress.</p>
+    ${summary}
+    <h2 class="ex-h2">Les épreuves</h2>
+    <div class="ex-grid">${SECTIONS.map((s,i) => {
+      const r = last[i], n = exRecs(s.id).length;
+      return `<button class="ex-card" data-id="${s.id}">
+        <div class="ex-card-top"><span class="ex-ico">${s.icon}</span><div><p class="ex-name">${esc(s.fr)}</p>
+        <p class="ex-meta"><span>${EXI.clock} ${esc(s.time)}</span><span class="pts">${EXI.target} 25 pts</span></p></div></div>
+        <p class="ex-desc">${esc(s.desc)}</p>
+        <p class="ex-last">${r ? `Dernier : <b class="sc ${scoreClass(r.score)}">${fmtScore(r.score)}/25</b> · ${n} essai${n > 1 ? "s" : ""}` : `<span class="hint">Pas encore fait</span>`}</p>
+      </button>`;}).join("")}</div>`;
+  $("exHub").querySelectorAll(".ex-card").forEach(c => c.onclick = () => { exView = c.dataset.id; renderExam(); window.scrollTo({top:0}); });
+}
+
+function sparkline(recs){
+  if (recs.length < 2) return "";
+  const pts = recs.slice(-12), w = 300, h = 80, pad = 8;
+  const x = i => pad + i * (w - 2*pad) / (pts.length - 1), y = s => h - pad - s / 25 * (h - 2*pad);
+  const path = pts.map((r,i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(r.score).toFixed(1)}`).join(" ");
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="Score trend">
+    <line x1="${pad}" x2="${w-pad}" y1="${y(12.5)}" y2="${y(12.5)}" class="mid-line"/>
+    <path d="${path}" class="line"/>${pts.map((r,i) => `<circle cx="${x(i)}" cy="${y(r.score)}" r="3.5" class="dot"/>`).join("")}</svg>
+    <p class="hint" style="margin:2px 0 0">Your last ${pts.length} scores. The dashed line is 12.5/25.</p>`;
+}
+function detailHTML(id, d){
+  if (!d) return "";
+  if (d.criteria){
+    return `${d.prompt ? `<p class="hint"><b>Sujet :</b> ${esc(d.prompt)}</p>` : ""}${d.parts ? `<p class="hint">${esc(d.parts)}</p>` : ""}
+      <table class="grid">${d.criteria.map(c => `<tr><td>${esc(c.nom)}</td><td>${fmtScore(c.score)} / ${c.max}</td></tr>`).join("")}</table>
+      ${d.feedback ? `<p>${esc(d.feedback)}</p>` : ""}${d.words ? `<p class="hint">${d.words} mots</p>` : ""}`;
+  }
+  if (d.review){
+    return `<p class="hint">${d.correct} correct answers out of ${d.total}.</p><ul class="diff">${d.review.filter(q => !q.ok).map(q => `<li>${esc(q.q)}<br><span class="hint">Your answer: ${esc(q.your || "—")} · Right: <b>${esc(q.right)}</b></span></li>`).join("") || "<li>No mistakes.</li>"}</ul>`;
+  }
+  return "";
+}
+function renderExamDetail(id){
+  const s = secOf(id), recs = exRecs(id);
+  $("exHub").hidden = true; $("exDetail").hidden = false;
+  const scores = recs.map(r => r.score);
+  const stat = (label, val) => `<div class="stat"><b>${val}</b><span>${label}</span></div>`;
+  $("exDetail").innerHTML = `<button class="btn" id="exBack" style="margin-bottom:14px">← Toutes les épreuves</button>
+    <div class="card">
+      <div class="ex-card-top"><span class="ex-ico">${s.icon}</span><div><h2 style="margin:0">${esc(s.fr)}</h2>
+      <p class="ex-meta"><span>${EXI.clock} ${esc(s.time)}</span><span class="pts">${EXI.target} 25 pts</span></p></div></div>
+      <p style="margin-top:12px">${esc(s.desc)}</p>
+      ${!API.key ? `<p class="notice show" style="margin:0 0 10px">Add your DeepSeek API key in Réglages to take a test.</p>` : ""}
+      <div class="sheet-btns"><button class="btn primary" id="exStart">Commencer un nouveau test</button>
+      ${id === "PO" ? `<button class="btn" id="exPractice">S'entraîner sur une partie (non noté)</button>` : ""}</div>
+    </div>
+    ${recs.length ? `<div class="stats">${stat("dernier", fmtScore(scores[scores.length-1]))}${stat("meilleur", fmtScore(Math.max(...scores)))}${stat("moyenne", fmtScore(scores.reduce((a,b)=>a+b,0)/scores.length))}${stat("essais", recs.length)}</div>
+    <div class="card">${sparkline(recs)}<h3 style="margin-top:${recs.length > 1 ? 18 : 0}px">Historique</h3>
+      <div class="hist">${recs.map((r,i) => ({r,i})).reverse().map(({r}) => `<details class="hist-row"><summary><span>${esc(fmtDate(r.date))}</span><b class="sc ${scoreClass(r.score)}">${fmtScore(r.score)}/25</b></summary><div class="hist-body">${detailHTML(id, r.detail)}</div></details>`).join("")}</div></div>`
+    : `<div class="card"><p class="hint" style="margin:0">No scores yet. Your results will appear here with the date.</p></div>`}`;
+  $("exBack").onclick = () => { exView = null; renderExam(); window.scrollTo({top:0}); };
+  $("exStart").onclick = () => {
+    if (!API.key) return needKey();
+    if (id === "CO" || id === "CE") startCompTest(id);
+    if (id === "PE") startWriting();
+    if (id === "PO") startOralFull();
+  };
+  if ($("exPractice")) $("exPractice").onclick = () => { fullMode = false; fullLog = []; part = PARTS[0]; scen = null; docu = null; orReset(); goTab("oral"); };
+}
+
+/* Minuteur de l'épreuve */
+let exTimerId = null;
+function startExamTimer(mins){
+  clearInterval(exTimerId);
+  let left = mins * 60;
+  const el = $("pTimer"); el.hidden = false; el.classList.remove("over");
+  const upd = () => { el.textContent = left > 0 ? fmt(left) : "Temps écoulé"; el.classList.toggle("over", left <= 0); };
+  upd();
+  exTimerId = setInterval(() => { left--; upd(); if (left <= -3600) clearInterval(exTimerId); }, 1000);
+}
+function stopExamTimer(){ clearInterval(exTimerId); const el = $("pTimer"); if (el) el.hidden = true; }
+
+/* ---- Compréhension orale / écrite ---- */
+async function startCompTest(id){
+  const s = secOf(id);
+  showLoading(`${s.fr}…`, "DeepSeek is writing a new exam. This takes 30 to 60 seconds.");
+  const tok = ++PL.token;
+  const q = `{"q":"question in French","o":["3 options in French"],"a":index of the correct option,"pts":points,"why":"one short English sentence explaining the answer"}`;
+  const prompt = id === "CO"
+    ? `Write a DELF B1 listening comprehension test (compréhension de l'oral) in standard France French.
+Three documents, as in the real exam. They are read aloud by a single synthetic voice, so write them as continuous text with NO speaker names and no stage directions; a conversation should be written as a radio interview where the host introduces the guest and reports what they say, or as a voicemail.
+Document 1: a voicemail or public announcement, 60 to 90 words, 4 questions.
+Document 2: an interview or testimony about daily life or work, 120 to 160 words, 5 questions.
+Document 3: a radio report on a social, cultural or environmental topic, 170 to 220 words, 6 questions.
+Questions test the main idea and precise details (numbers, places, opinions, reasons). Points per question are 1, 1.5 or 2, and the total of all points is exactly 25. Write numbers in words in the documents. Vary the position of the correct answer.
+Return JSON {"docs":[{"title":"short French title","situation":"one English sentence describing the situation","text":"the French text read aloud","questions":[${q}]}]}`
+    : `Write a DELF B1 reading comprehension test (compréhension des écrits) in standard France French.
+Document 1: a practical text, 180 to 230 words (for example three offers, ads or club descriptions that the reader must compare to choose the one that fits a person's needs), 5 questions.
+Document 2: a press article on a social topic, 330 to 400 words, with arguments and opinions, 8 questions including some on implicit meaning and the author's opinion; you may use options ["Vrai","Faux","On ne sait pas"].
+Points per question are 1, 1.5, 2 or 3, and the total of all points is exactly 25. Vary the position of the correct answer.
+Return JSON {"docs":[{"title":"French title","situation":"one English sentence describing the document","text":"the French text (use \\n between paragraphs)","questions":[${q}]}]}`;
+  try {
+    const T = parseJSON(await askAI(TEST_SYS, [{role:"user", content:prompt}], true, 7000));
+    const docs = (T.docs || []).filter(d => d && d.text && Array.isArray(d.questions)).map(d => ({...d, plays:0,
+      questions: d.questions.filter(x => x && Array.isArray(x.o) && x.o.length >= 2 && Number.isInteger(x.a) && x.a >= 0 && x.a < x.o.length).map(x => ({...x, pts: +x.pts > 0 ? +x.pts : 1}))}))
+      .filter(d => d.questions.length);
+    if (docs.length < 2) throw new Error("INCOMPLETE");
+    if (tok !== PL.token) return;
+    runCompTest(id, docs);
+  } catch(e){ if (tok === PL.token) showErr(e, () => startCompTest(id)); }
+}
+function runCompTest(id, docs){
+  const s = secOf(id), answers = [];
+  const steps = [body => {
+    body.innerHTML = `<p class="p-kicker">Examen blanc</p><h1 class="p-title">${esc(s.fr)}</h1>
+      <p>${docs.length} documents, ${docs.reduce((a,d) => a + d.questions.length, 0)} questions, 25 points. Suggested time: ${esc(s.time)}.</p>
+      <p class="hint">${id === "CO" ? "Each document can be played twice, as in the real exam. Read the questions before you listen." : "Read each document, then answer. You can reopen the text on every question."} Answers are shown only at the end.</p>`;
+    foot("Commencer l'épreuve", () => { startExamTimer(s.mins); nextStep(); });
+  }];
+  docs.forEach((d, di) => {
+    steps.push(body => {
+      const audio = id === "CO";
+      body.innerHTML = `<p class="p-kicker">Document ${di+1} sur ${docs.length}</p><h1 class="p-title" style="font-size:1.6rem">${esc(d.title || "")}</h1><p class="hint">${esc(d.situation || "")}</p>
+        ${audio ? `<div class="row"><button class="btn primary" id="dPlay"></button></div>` : `<div class="text ce-text">${String(d.text).split(/\n+/).map(p => `<p>${esc(p)}</p>`).join("")}</div>`}
+        <h3>Les questions</h3><ol class="plan" style="line-height:1.6">${d.questions.map(x => `<li>${esc(x.q)}</li>`).join("")}</ol>`;
+      if (audio){
+        const b = $("dPlay");
+        const upd = () => { b.textContent = d.plays >= 2 ? "Écoutes terminées" : `Écouter (${2 - d.plays} restante${2 - d.plays > 1 ? "s" : ""})`; b.disabled = d.plays >= 2; foot("Répondre aux questions", nextStep, d.plays > 0); };
+        b.onclick = () => { d.plays++; speak(d.text); upd(); };
+        upd();
+      } else foot("Répondre aux questions", nextStep);
+    });
+    d.questions.forEach((x, qi) => steps.push(body => {
+      const audio = id === "CO";
+      body.innerHTML = `<p class="p-kicker">Document ${di+1}, question ${qi+1} sur ${d.questions.length} · ${fmtScore(x.pts)} pt${x.pts > 1 ? "s" : ""}</p>
+        ${audio ? `<div class="row" style="margin:0 0 14px"><button class="btn" id="qPlay"></button></div>` : `<details class="passage"><summary>${esc(d.title || "Le texte")}</summary>${String(d.text).split(/\n+/).map(p => `<p>${esc(p)}</p>`).join("")}</details>`}
+        <p class="p-q">${esc(x.q)}</p><div class="opts">${x.o.map((o,i) => `<button class="opt" data-i="${i}">${esc(o)}</button>`).join("")}</div>`;
+      if (audio){
+        const b = $("qPlay");
+        const upd = () => { b.textContent = d.plays >= 2 ? "Plus d'écoute" : `Réécouter (${2 - d.plays} restante${2 - d.plays > 1 ? "s" : ""})`; b.disabled = d.plays >= 2; };
+        b.onclick = () => { d.plays++; speak(d.text); upd(); }; upd();
+      }
+      const prev = answers.find(a => a.x === x);
+      const pick = i => { body.querySelectorAll(".opt").forEach(o => o.classList.toggle("picked", +o.dataset.i === i)); foot("Suivant", () => {
+        const rec = answers.find(a => a.x === x); if (rec) rec.sel = i; else answers.push({x, sel:i}); nextStep(); }, true); };
+      body.querySelectorAll(".opt").forEach(o => o.onclick = () => pick(+o.dataset.i));
+      foot("Suivant", null, false);
+      if (prev) pick(prev.sel);
+      skipBtn("Passer", () => { if (!answers.find(a => a.x === x)) answers.push({x, sel:null}); nextStep(); });
+    }));
+  });
+  steps.push(body => {
+    PL.final = true; stopExamTimer(); stopAll();
+    const all = docs.flatMap(d => d.questions);
+    const max = all.reduce((a,x) => a + x.pts, 0);
+    const got = all.reduce((a,x) => { const r = answers.find(y => y.x === x); return a + (r && r.sel === x.a ? x.pts : 0); }, 0);
+    const review = all.map(x => { const r = answers.find(y => y.x === x); return {q:x.q, your: r && r.sel !== null ? x.o[r.sel] : "", right:x.o[x.a], ok: !!(r && r.sel === x.a), why:x.why}; });
+    const score = saveExam(id, got / max * 25, {correct: review.filter(r => r.ok).length, total: review.length, review: review.map(({q,your,right,ok}) => ({q,your,right,ok}))});
+    body.innerHTML = `<div class="center"><p class="p-kicker">${esc(s.fr)}</p><p class="big-score">${fmtScore(score)}<small style="font-size:1.4rem;color:var(--muted)"> / 25</small></p>
+      <p class="hint">${review.filter(r => r.ok).length} correct answers out of ${review.length}. ${score < 5 ? "Below 5/25 is eliminatory in the real exam." : score >= 12.5 ? "Above half marks." : ""}</p></div>
+      ${docs.map((d, di) => `<h3>Document ${di+1} : ${esc(d.title || "")}</h3>${id === "CO" ? `<details class="passage"><summary>Transcription</summary><p>${esc(d.text)}</p></details>` : ""}
+        ${d.questions.map(x => { const r = review[all.indexOf(x)]; return `<div class="corr"><b style="color:${r.ok ? "var(--ok)" : "var(--miss)"}">${r.ok ? "✓" : "✗"}</b> ${esc(x.q)}<br><span class="hint">${r.ok ? "" : `Your answer: ${esc(r.your || "—")} · `}Right answer: <b>${esc(r.right)}</b>${x.why ? `<br>${esc(x.why)}` : ""}</span></div>`; }).join("")}`).join("")}`;
+    foot("Terminer", closePlayer);
+  });
+  openPlayer(steps);
+}
+
+/* ---- Production écrite ---- */
+const PE_TOPICS = [
+  {type:"Forum", sujet:"Sur un forum, des internautes se demandent si les réseaux sociaux rapprochent ou éloignent les gens. Vous donnez votre opinion en vous appuyant sur des exemples précis tirés de votre expérience."},
+  {type:"Lettre", sujet:"Vous avez participé à un voyage organisé qui s'est mal passé (hôtel, activités, organisation). Vous écrivez à l'agence pour raconter ce qui s'est passé, exprimer votre mécontentement et demander une solution."},
+  {type:"Article", sujet:"Le journal de votre ville demande à ses lecteurs : « Faut-il interdire les voitures dans le centre-ville ? » Vous écrivez un article pour donner votre point de vue, avec des arguments et des exemples."},
+  {type:"Courriel", sujet:"Un ami français hésite à partir étudier un an à l'étranger. Vous lui écrivez pour raconter votre propre expérience d'un grand changement dans votre vie et lui donner des conseils."},
+  {type:"Forum", sujet:"Sur un forum, la question est : « Le télétravail, une bonne idée pour tout le monde ? » Vous répondez en présentant les avantages et les inconvénients et en donnant votre opinion."},
+  {type:"Lettre", sujet:"Votre voisin organise souvent des fêtes bruyantes. Vous lui écrivez une lettre pour expliquer la situation, raconter une soirée récente difficile et proposer une solution."},
+  {type:"Article", sujet:"Pour le blog de votre école de langues, vous racontez un souvenir marquant d'un voyage et vous expliquez ce que cette expérience vous a appris."},
+  {type:"Forum", sujet:"Sur un forum de parents et d'enseignants, on se demande s'il faut interdire les téléphones portables à l'école. Vous donnez votre opinion avec des arguments précis."}
+];
+const PE_GRID = [["Respect de la consigne",2],["Capacité à présenter des faits",4],["Capacité à exprimer sa pensée",4],["Cohérence et cohésion",3],["Étendue du vocabulaire",2],["Maîtrise du vocabulaire",2],["Maîtrise de l'orthographe lexicale",2],["Degré d'élaboration des phrases",2],["Choix des temps et des modes",2],["Morphosyntaxe, orthographe grammaticale",2]];
+function startWriting(){
+  const t = PE_TOPICS[Math.floor(Math.random() * PE_TOPICS.length)];
+  const W = {text:"", t};
+  openPlayer([
+    body => {
+      body.innerHTML = `<p class="p-kicker">Examen blanc</p><h1 class="p-title">Production écrite</h1><p>Write <b>160 to 180 words</b> in 45 minutes. You'll be graded out of 25 on the DELF B1 writing grid.</p>
+        <p class="hint">Tip: plan for 5 minutes, write for 30, and keep 10 minutes to reread your verbs and agreements.</p>`;
+      foot("Voir le sujet", () => { startExamTimer(45); nextStep(); });
+    },
+    body => {
+      body.innerHTML = `<p class="p-kicker">${esc(t.type)}</p><div class="doc"><p>${esc(t.sujet)}</p></div><p class="hint" style="margin-top:8px">160 à 180 mots.</p>
+        <textarea id="peText" rows="14" placeholder="Écris ton texte ici…" spellcheck="false" autocorrect="off" autocapitalize="sentences"></textarea>
+        <div class="accents">${["é","è","ê","à","â","ç","ù","î","ô","œ","«","»"].map(a => `<button class="acc" data-a="${a}">${a}</button>`).join("")}</div>
+        <p class="hint" id="peCount" style="margin-top:8px"></p>`;
+      const ta = $("peText"); ta.value = W.text;
+      const words = () => ta.value.trim().split(/\s+/).filter(Boolean).length;
+      const upd = () => { W.text = ta.value; const n = words(); $("peCount").textContent = `${n} mot${n > 1 ? "s" : ""}${n < 160 ? ` · encore ${160 - n} pour atteindre 160` : n > 180 ? " · un peu trop long" : " · bonne longueur"}`; foot("Rendre ma copie", () => { if (n < 120 && !confirm("Your text is under 120 words, which will cost points. Submit anyway?")) return; nextStep(); }, n >= 40); };
+      ta.oninput = upd; upd();
+      body.querySelectorAll(".acc").forEach(b => { b.onmousedown = e => e.preventDefault(); b.onclick = () => { const s = ta.selectionStart ?? ta.value.length, e = ta.selectionEnd ?? s; ta.setRangeText(b.dataset.a, s, e, "end"); ta.focus(); upd(); }; });
+    },
+    body => {
+      stopExamTimer();
+      body.innerHTML = `<div class="loading"><div class="spin"></div><h2>Correction de ta copie…</h2><p class="hint">About 20 to 40 seconds.</p></div>`;
+      foot("Patiente…", null, false);
+      const tok = PL.token, at = PL.i;
+      const words = W.text.trim().split(/\s+/).filter(Boolean).length;
+      const prompt = `You are an experienced DELF B1 examiner. Grade this "production écrite" strictly but fairly, using the official DELF B1 writing grid.
+Task (${t.type}): ${t.sujet} Expected length: 160 to 180 words. The text has ${words} words.
+Text:
+"""${W.text}"""
+Grid (score each criterion in steps of 0.5, never above its maximum): ${PE_GRID.map(([n,m]) => `${n} /${m}`).join("; ")}.
+Return JSON {"criteria":[{"nom":"criterion name exactly as given","score":number,"comment":"one short English sentence"}],
+ "feedback":"3 or 4 English sentences: overall level, main strengths, the most important things to fix",
+ "errors":[up to 10 items {"wrong":"…","right":"…","why":"short English explanation"}], tense and agreement errors first,
+ "corrected":"the whole text rewritten in correct French, keeping the learner's ideas and structure"}`;
+      askAI(TEST_SYS, [{role:"user", content:prompt}], true, 5000).then(raw => {
+        const R = parseJSON(raw);
+        if (!Array.isArray(R.criteria)) throw new Error("INCOMPLETE");
+        if (tok !== PL.token || PL.i !== at) return;
+        const crit = PE_GRID.map(([n,m]) => { const c = R.criteria.find(x => noAcc(String(x.nom || "").toLowerCase()).startsWith(noAcc(n.toLowerCase()).slice(0, 14))) || {}; return {nom:n, max:m, score: Math.max(0, Math.min(m, Math.round((+c.score || 0) * 2) / 2)), comment:c.comment || ""}; });
+        const total = saveExam("PE", crit.reduce((a,c) => a + c.score, 0), {criteria:crit.map(({nom,max,score}) => ({nom,max,score})), feedback:R.feedback || "", prompt:t.sujet, words});
+        PL.final = true;
+        body.innerHTML = `<div class="center"><p class="p-kicker">Production écrite</p><p class="big-score">${fmtScore(total)}<small style="font-size:1.4rem;color:var(--muted)"> / 25</small></p><p class="hint">${words} mots</p></div>
+          <p>${esc(R.feedback || "")}</p>
+          <h3>Grille</h3><table class="grid">${crit.map(c => `<tr><td>${esc(c.nom)}${c.comment ? `<br><span class="hint">${esc(c.comment)}</span>` : ""}</td><td>${fmtScore(c.score)} / ${c.max}</td></tr>`).join("")}</table>
+          ${(R.errors || []).length ? `<h3>Erreurs</h3>${R.errors.map(c => `<div class="corr"><s>${esc(c.wrong || "")}</s> → <b>${esc(c.right || "")}</b><br><span class="hint">${esc(c.why || "")}</span></div>`).join("")}` : ""}
+          ${R.corrected ? `<h3>Version corrigée</h3><p class="text">${esc(R.corrected)}</p>` : ""}
+          <p class="fine">A practice estimate by AI, not an official grade.</p>`;
+        foot("Terminer", closePlayer);
+      }).catch(e => {
+        if (tok !== PL.token || PL.i !== at) return;
+        body.innerHTML = `<div class="loading"><h2>Oups</h2><p>${esc(apiErr(e))}</p><p class="hint">Your text is kept.</p></div>`;
+        foot("Réessayer", renderStep); skipBtn("Modifier mon texte", () => { PL.i--; renderStep(); });
+      });
+    }
+  ]);
+}
+
+/* ---- Production orale : épreuve complète ---- */
+let fullMode = false, fullLog = [];
+const PO_GRID = [["Partie 1 : entretien dirigé",4],["Partie 2 : exercice en interaction",5],["Partie 3 : point de vue",5],["Lexique",4],["Grammaire et temps",4],["Clarté de la prononciation",3]];
+function startOralFull(){
+  fullMode = true; fullLog = []; part = PARTS[0]; scen = null; docu = null;
+  orReset(); goTab("oral");
+}
+function exitOralFull(){ fullMode = false; fullLog = []; exView = "PO"; goTab("examen"); }
+async function gradeOralFull(){
+  $("orSession").hidden = true; $("orIntro").hidden = true;
+  $("orEval").hidden = false; $("orEval").innerHTML = `<div class="loading" style="padding:30px 0"><div class="spin"></div><h2>Notation de l'épreuve…</h2></div>`;
+  const prompt = `You are an experienced DELF B1 examiner. Grade this mock "production orale" (three parts) out of 25. The candidate's words come from speech recognition: ignore punctuation and obvious recognition errors, but unclear or nonsensical words may indicate unclear pronunciation, so judge pronunciation cautiously.
+${fullLog.map(p => `=== ${p.name} ===\n${p.ctx ? p.ctx + "\n" : ""}${p.transcript || "(the candidate said nothing)"}`).join("\n\n")}
+Grid (steps of 0.5, never above the maximum): ${PO_GRID.map(([n,m]) => `${n} /${m}`).join("; ")}. A part where the candidate said nothing gets 0 for that part.
+Return JSON {"criteria":[{"nom":"criterion name exactly as given","score":number,"comment":"one short English sentence"}],"resume":"3 English sentences","forces":["2 or 3 points in English"],"a_travailler":["2 or 3 points in English"],"corrections":[up to 6 {"dit":"what the candidate said","mieux":"correct version"}],"conseil":"one concrete English tip"}`;
+  try {
+    const R = parseJSON(await askAI(TEST_SYS, [{role:"user", content:prompt}], true, 3500));
+    if (!Array.isArray(R.criteria)) throw new Error("INCOMPLETE");
+    const crit = PO_GRID.map(([n,m], i) => { const c = R.criteria.find(x => noAcc(String(x.nom || "").toLowerCase()).startsWith(noAcc(n.toLowerCase()).slice(0, 9))) || R.criteria[i] || {}; return {nom:n, max:m, score: Math.max(0, Math.min(m, Math.round((+c.score || 0) * 2) / 2)), comment:c.comment || ""}; });
+    const total = saveExam("PO", crit.reduce((a,c) => a + c.score, 0), {criteria:crit.map(({nom,max,score}) => ({nom,max,score})), feedback:R.resume || ""});
+    $("orEval").innerHTML = `<div class="center"><p class="p-kicker">Production orale</p><p class="big-score">${fmtScore(total)}<small style="font-size:1.4rem;color:var(--muted)"> / 25</small></p></div>
+      <p>${esc(R.resume || "")}</p>
+      <h3>Grille</h3><table class="grid">${crit.map(c => `<tr><td>${esc(c.nom)}${c.comment ? `<br><span class="hint">${esc(c.comment)}</span>` : ""}</td><td>${fmtScore(c.score)} / ${c.max}</td></tr>`).join("")}</table>
+      <h4>Strengths</h4><ul>${(R.forces||[]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <h4>To work on</h4><ul>${(R.a_travailler||[]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      ${(R.corrections||[]).length ? `<h4>Corrections</h4>${R.corrections.map(c => `<p class="corr"><s>${esc(c.dit || "")}</s><br><b>${esc(c.mieux || "")}</b></p>`).join("")}` : ""}
+      <h4>Next time</h4><p>${esc(R.conseil || "")}</p>
+      <p class="fine">A practice estimate by AI from a speech transcript, not an official grade.</p>
+      <div class="row"><button class="btn primary" id="poBack">Retour à l'examen</button></div>`;
+    $("poBack").onclick = exitOralFull;
+  } catch(e){
+    $("orEval").innerHTML = `<p>${esc(apiErr(e))}</p><div class="row"><button class="btn primary" id="poRetry">Réessayer</button><button class="btn" id="poBack">Abandonner</button></div>`;
+    $("poRetry").onclick = gradeOralFull; $("poBack").onclick = exitOralFull;
+  }
+}
+
 /* =================== VERSIONS =================== */
 // To publish an update: raise APP_VERSION and add an entry at the top of CHANGELOG.
-const APP_VERSION = 4;
+const APP_VERSION = 5;
 const CHANGELOG = [
+  {v:5, date:"25 Nov 2026", items:[
+    "New Examen section: choose a section of the DELF B1 (listening, reading, writing or speaking) and take a full mock test.",
+    "Each test is graded out of 25. Writing uses the DELF B1 writing grid; speaking runs all three parts and grades them together.",
+    "Every score is saved with its date. Open a section to see your last, best and average score, a progress line, and the details of each attempt.",
+    "When you've done all four sections, you'll see your total out of 100 and whether it would pass."]},
   {v:4, date:"25 Nov 2026", items:[
     "Lessons are rebuilt around tenses: new words → the tense with its English equivalent → drills that mix in tenses you've already learned → speak for about 5 minutes → correction of what you said → quiz built from your corrected answer.",
     "\"Je ne peux pas parler\" lets you skip speaking: the app writes a model answer and the quiz is built from it.",
