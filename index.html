@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parle-moi</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#23439A">
+<meta name="apple-mobile-web-app-title" content="Parle-moi">
+<style>
+:root{
+  --bg:#EEF2F8; --surface:#FFFFFF; --ink:#14213D; --muted:#56657F; --line:#D3DCE9;
+  --blue:#23439A; --on-blue:#FFFFFF; --blue-soft:#DEE6F7;
+  --ok:#1E7A4F; --ok-soft:#DDF1E6; --miss:#9A4D00; --miss-soft:#FBE7D3;
+  --rec:#B3261E; --on-rec:#FFFFFF; --on-ok:#FFFFFF;
+  --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0D1424; --surface:#162039; --ink:#E7EDF7; --muted:#9DABC3; --line:#2B3A5A;
+    --blue:#93B2F3; --on-blue:#0D1424; --blue-soft:#1F3157;
+    --ok:#74D6A4; --ok-soft:#173A2B; --miss:#F3AA62; --miss-soft:#3E2B17;
+    --rec:#F2847A; --on-rec:#1A0E0D; --on-ok:#0D1424;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:660px;margin:0 auto;padding:20px 16px 56px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+h1{font-family:var(--serif);font-size:2rem;line-height:1.1;margin:0;font-weight:600;letter-spacing:-.01em}
+h2{font-family:var(--serif);font-size:1.4rem;margin:0 0 6px;font-weight:600}
+h3{font-size:1rem;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:.9rem;margin:4px 0 0}
+p{margin:0 0 10px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:10px;font-weight:600;font-size:.95rem}
+.btn.primary{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
+.btn:disabled,.mic:disabled{opacity:.45;cursor:default}
+.settings{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:none}
+.settings.open{display:block}
+label.f{display:block;font-size:.85rem;color:var(--muted);margin:10px 0 4px}
+label.f:first-child{margin-top:0}
+select,input[type=text]{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.hint{font-size:.84rem;color:var(--muted)}
+.notice{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--miss-soft);font-size:.9rem;display:none}
+.notice.show{display:block}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;margin:16px 0}
+.tab{border:0;background:transparent;color:var(--muted);padding:10px 4px;border-radius:10px;font-weight:600;font-size:.95rem}
+.tab[aria-selected="true"]{background:var(--blue);color:var(--on-blue)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:14px}
+.meta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:.85rem;margin-bottom:14px}
+.sentence{font-family:var(--serif);font-size:1.6rem;line-height:1.4;margin:0 0 10px}
+.w{border-radius:4px;padding:0 2px;transition:background-color .35s,color .35s}
+.w.ok{color:var(--ok);background:var(--ok-soft)}
+.w.miss{color:var(--miss);background:var(--miss-soft);text-decoration:underline wavy;text-underline-offset:5px;text-decoration-thickness:1px}
+.trans{color:var(--muted);font-size:.95rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.row.split{justify-content:space-between}
+.mic{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:16px;padding:16px;border:0;border-radius:999px;background:var(--rec);color:var(--on-rec);font-weight:700;font-size:1.05rem}
+.mic svg{width:22px;height:22px;flex:none}
+.mic.small{width:auto;padding:10px 16px;font-size:.95rem;margin-top:0}
+.mic.listening{animation:pulse 1.3s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--rec) 45%,transparent)}50%{box-shadow:0 0 0 12px color-mix(in srgb,var(--rec) 0%,transparent)}}
+@media (prefers-reduced-motion: reduce){.mic.listening{animation:none;outline:3px dashed var(--on-rec);outline-offset:-6px}.w,.bar i{transition:none}}
+.result{margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--bg);display:none}
+.result.show{display:block}
+.score{font-family:var(--serif);font-size:2rem;font-weight:600;line-height:1.1}
+.score small{font-family:var(--sans);font-size:.95rem;font-weight:500;color:var(--muted);margin-left:8px}
+.heard{margin:8px 0 0;font-size:.95rem}
+.heard i{font-family:var(--serif);font-size:1.05rem}
+.fine{font-size:.82rem;color:var(--muted);margin:8px 0 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;border-radius:999px;font-size:.9rem}
+.chip[aria-pressed="true"]{background:var(--blue-soft);border-color:var(--blue)}
+.chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--miss);margin-right:6px;vertical-align:middle}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:12px 14px;border-radius:12px;font-size:1rem}
+.opt.correct{background:var(--ok-soft);border-color:var(--ok)}
+.opt.wrong{background:var(--miss-soft);border-color:var(--miss)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pair .opt{text-align:center;font-family:var(--serif);font-size:1.4rem}
+.bigword{font-family:var(--serif);font-size:2.6rem;text-align:center;margin:6px 0}
+.results{display:grid;gap:12px;margin-top:8px}
+.res-row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+.res-row .name{font-weight:600}
+.res-row .pct{font-family:var(--serif);font-size:1.2rem}
+.bar{grid-column:1/-1;height:8px;border-radius:99px;background:var(--bg);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .6s}
+.bar i.weak{background:var(--miss)}
+.tag{font-size:.78rem;font-weight:600;color:var(--miss);margin-left:6px}
+.how{font-size:.95rem;background:var(--bg);border-radius:12px;padding:12px 14px}
+.text{font-family:var(--serif);font-size:1.2rem;line-height:1.7;margin:0}
+.s{cursor:pointer;border-radius:4px}
+.s:hover{background:var(--blue-soft)}
+.s.sel{background:var(--blue-soft);box-shadow:0 2px 0 var(--blue)}
+.doc{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg)}
+.doc h4{font-family:var(--serif);font-size:1.15rem;margin:0 0 6px}
+.doc p{font-family:var(--serif);font-size:1.05rem;margin:0}
+.timer{font-family:var(--serif);font-size:1.6rem;font-variant-numeric:tabular-nums}
+.timer.over{color:var(--miss)}
+.log{display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow-y:auto;padding:2px}
+.msg{padding:10px 14px;border-radius:16px;max-width:88%}
+.msg.me{align-self:flex-end;background:var(--blue);color:var(--on-blue);border-bottom-right-radius:4px}
+.msg.ex{align-self:flex-start;background:var(--bg);font-family:var(--serif);font-size:1.1rem;border-bottom-left-radius:4px;cursor:pointer}
+.live{min-height:2.6em;margin-top:12px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-family:var(--serif);display:none}
+.live.show{display:block}
+.eval h4{margin:16px 0 6px;font-size:.95rem}
+.eval ul{margin:0;padding-left:20px}
+.eval li{margin-bottom:4px}
+.level{display:inline-block;background:var(--blue-soft);border-radius:8px;padding:4px 10px;font-weight:600}
+.corr{font-size:.95rem;margin-bottom:8px}
+.corr s{color:var(--miss)}
+.corr b{color:var(--ok);font-weight:600}
+
+/* ---- Parcours ---- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 6px;text-align:center}
+.stat b{display:block;font:600 1.35rem var(--serif);line-height:1.2}
+.stat span{font-size:.74rem;color:var(--muted)}
+.unit-head{background:var(--blue);color:var(--on-blue);border-radius:18px;padding:14px 18px 16px;margin:22px 0 14px}
+.unit-head h2{color:inherit;margin:2px 0 10px}
+.u-top{display:flex;justify-content:space-between;font-size:.85rem;opacity:.85}
+.u-prog{height:6px;border-radius:99px;background:color-mix(in srgb,var(--on-blue) 25%,transparent);overflow:hidden}
+.u-prog i{display:block;height:100%;background:var(--on-blue);border-radius:99px}
+.path{display:flex;flex-direction:column;align-items:center;gap:18px;padding:6px 0 10px}
+.node-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;width:140px}
+.node{position:relative;width:74px;height:74px;border-radius:50%;border:0;display:grid;place-items:center;font:700 1.5rem var(--serif);box-shadow:0 6px 0 color-mix(in srgb,var(--ink) 22%,transparent)}
+.node:active{transform:translateY(3px);box-shadow:0 3px 0 color-mix(in srgb,var(--ink) 22%,transparent)}
+.node.locked{background:var(--line);color:var(--muted)}
+.node.open{background:var(--blue);color:var(--on-blue)}
+.node.done{background:var(--ok);color:var(--on-ok)}
+.node.skipped{background:var(--ok-soft);color:var(--ok)}
+.node.cp{border-radius:24px;width:84px}
+.node.exam.open{background:var(--rec);color:var(--on-rec)}
+.node.current{outline:4px solid color-mix(in srgb,var(--blue) 40%,transparent);outline-offset:5px;animation:bob 2.2s ease-in-out infinite}
+@keyframes bob{50%{translate:0 -4px}}
+.badge{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;border-radius:11px;background:var(--miss);color:var(--surface);font:700 .75rem var(--sans);display:grid;place-items:center;padding:0 5px}
+.node-label{font-size:.82rem;text-align:center;color:var(--muted);line-height:1.25}
+.node-label b{color:var(--ok)}
+.sheet-bg{position:fixed;inset:0;background:rgba(5,10,20,.45);z-index:40}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:660px;margin:0 auto;background:var(--surface);border-radius:22px 22px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom));max-height:82vh;overflow-y:auto;box-shadow:0 -10px 30px rgba(0,0,0,.2)}
+.sheet-btns{display:grid;gap:8px;margin-top:16px}
+.sheet-btns .btn{padding:13px}
+.diff{padding-left:18px;margin:6px 0 0}
+.diff li{margin-bottom:8px;font-size:.93rem}
+/* ---- Leçon temps ---- */
+.anchor{background:var(--blue-soft);border-radius:10px;padding:8px 12px}
+.conj{border-collapse:collapse;margin:10px 0 4px;font-family:var(--serif);font-size:1.1rem}
+.conj caption{text-align:left;font:600 .85rem var(--sans);color:var(--muted);padding-bottom:4px}
+.conj td{padding:4px 18px 4px 0;border-bottom:1px solid var(--line)}
+.trap{background:var(--miss-soft);border-radius:12px;padding:10px 14px;margin:14px 0}
+.timer.done{color:var(--ok)}
+textarea{width:100%;margin-top:12px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:1.05rem/1.5 var(--serif);resize:vertical}
+.modal-bg{position:fixed;inset:0;background:rgba(5,10,20,.5);z-index:60;display:grid;place-items:center;padding:16px}
+.modal{background:var(--surface);border-radius:20px;padding:22px 20px;max-width:440px;width:100%;max-height:80vh;overflow-y:auto}
+.modal ul{padding-left:20px;margin:8px 0 0}.modal li{margin-bottom:6px}
+/* ---- Lecteur ---- */
+.player{position:fixed;inset:0;background:var(--bg);z-index:50;display:none;flex-direction:column}
+.player.open{display:flex}
+.p-top{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;max-width:660px;width:100%;margin:0 auto}
+.p-close{border:0;background:none;color:var(--muted);font-size:1.9rem;line-height:1;padding:2px 8px}
+.p-bar{flex:1;height:12px;background:var(--line);border-radius:99px;overflow:hidden}
+.p-bar i{display:block;height:100%;width:0;background:var(--ok);border-radius:99px;transition:width .35s}
+.p-body{flex:1;overflow-y:auto;padding:6px 16px 24px;max-width:660px;width:100%;margin:0 auto}
+.p-foot{border-top:1px solid var(--line);background:var(--surface);padding:14px 16px calc(14px + env(safe-area-inset-bottom))}
+.p-foot.ok{background:var(--ok-soft)} .p-foot.bad{background:var(--miss-soft)}
+.p-foot-in{max-width:628px;margin:0 auto}
+.p-fb{display:none;margin-bottom:12px}
+.p-fb p{margin:0 0 4px}
+.fb-title{font-weight:700;font-size:1.1rem}
+.p-foot.ok .fb-title{color:var(--ok)} .p-foot.bad .fb-title{color:var(--miss)}
+.fb-why{color:var(--muted);font-size:.9rem}
+.p-btns{display:flex;gap:8px}
+.p-main{flex:1;padding:15px;border-radius:14px;border:0;background:var(--blue);color:var(--on-blue);font-weight:700;font-size:1.05rem}
+.p-foot.ok .p-main{background:var(--ok);color:var(--on-ok)}
+.p-foot.bad .p-main{background:var(--miss);color:var(--surface)}
+.p-main:disabled{opacity:.4}
+.p-btns .btn{padding:0 16px}
+.p-kicker{color:var(--muted);font-size:.9rem;font-weight:600;margin:10px 0}
+.p-title{font-family:var(--serif);font-size:2rem;line-height:1.15;margin:0 0 12px;font-weight:600}
+.p-q{font-family:var(--serif);font-size:1.4rem;line-height:1.4;margin:0 0 16px}
+.opt.picked{border-color:var(--blue);background:var(--blue-soft)}
+.blank{display:inline-block;min-width:3em;border-bottom:2px solid var(--blue);text-align:center;color:var(--blue);margin:0 4px}
+.accents{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.acc{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;width:40px;height:40px;font-size:1.1rem}
+.tray{min-height:64px;border-bottom:2px solid var(--line);padding:8px 0;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;align-items:center}
+.bank{display:flex;flex-wrap:wrap;gap:8px}
+.tile{border:1px solid var(--line);border-bottom-width:3px;background:var(--surface);color:var(--ink);border-radius:12px;padding:9px 13px;font:1.08rem var(--serif)}
+.word-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:16px}
+.wc-fr{font-family:var(--serif);font-size:2.3rem;line-height:1.2;margin:0}
+.wc-en{color:var(--muted);font-size:1.1rem;margin:6px 0 16px}
+.ex{font-family:var(--serif);font-size:1.18rem;margin:0 0 2px;cursor:pointer}
+.ex-row{padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.plan{padding-left:20px;line-height:1.9}
+.passage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px}
+.passage summary{font-weight:600;cursor:pointer}
+.passage p{font-family:var(--serif);font-size:1.05rem;margin:8px 0 0}
+.loading{text-align:center;padding:56px 8px 20px}
+.spin{width:46px;height:46px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--blue);margin:0 auto 22px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.big-score{font-family:var(--serif);font-size:3.4rem;line-height:1.05;margin:4px 0 8px;font-weight:600}
+.center{text-align:center}
+@media (prefers-reduced-motion: reduce){.node.current{animation:none}.spin{animation-duration:3s}.p-bar i{transition:none}}
+@media (max-width:420px){.sentence{font-size:1.38rem}.tab{font-size:.88rem}h1{font-size:1.7rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Parle-moi</h1>
+      <p class="sub">Ton chemin vers le DELF B1.</p>
+    </div>
+    <button class="btn" id="settingsBtn" aria-expanded="false" aria-controls="settings">Réglages</button>
+  </header>
+
+  <div class="settings" id="settings">
+    <label class="f" for="voiceSel">Voix</label>
+    <select id="voiceSel"></select>
+    <p class="hint" id="voiceHint"></p>
+    <label class="f" for="rateIn">Vitesse : <span id="rateOut">0.95</span></label>
+    <input type="range" id="rateIn" min="0.6" max="1.2" step="0.05" value="0.95">
+    <p class="hint">Recognition is set to France French, so it checks you against standard French pronunciation.</p>
+    <label class="f" for="keyIn">Clé API DeepSeek</label>
+    <input type="password" id="keyIn" placeholder="sk-…" autocomplete="off" spellcheck="false">
+    <p class="hint">Needed for the exam simulation and new listening documents. It's saved only in this browser on your phone, never on GitHub.</p>
+    <details style="margin-top:8px">
+      <summary class="hint" style="cursor:pointer">Avancé</summary>
+      <label class="f" for="modelIn">Modèle</label>
+      <input type="text" id="modelIn" spellcheck="false">
+      <label class="f" for="baseIn">Adresse de l'API</label>
+      <input type="text" id="baseIn" spellcheck="false">
+    </details>
+    <div class="row"><button class="btn primary" id="keySave">Enregistrer</button><button class="btn" id="keyTest">Tester la clé</button></div>
+    <p class="hint" id="keyMsg" aria-live="polite" style="margin-top:8px"></p>
+    <div class="row split"><span class="hint" id="verLabel"></span><button class="btn" id="verBtn" style="padding:6px 12px;font-size:.85rem">Nouveautés</button></div>
+  </div>
+
+  <div class="notice" id="noSR">Speech recognition isn't available in this browser. Use Safari on iPhone or Chrome on Android, and allow the microphone.</div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-group="parcours">Parcours</button>
+    <button class="tab" role="tab" aria-selected="false" data-group="tests">Tests</button>
+    <button class="tab" role="tab" aria-selected="false" data-group="examen">Examen</button>
+    <button class="tab" role="tab" aria-selected="false" data-group="accent">Accent</button>
+  </div>
+  <div class="chips" id="subnav" hidden></div>
+
+  <!-- PARCOURS -->
+  <section class="panel active" id="parcours">
+    <div class="stats" id="pgStats"></div>
+    <div class="notice" id="pgKey" style="margin:0 0 12px">Add your DeepSeek API key in Réglages (top right) to generate lessons.</div>
+    <div id="tree"></div>
+  </section>
+
+  <!-- TESTS -->
+  <section class="panel" id="niveau">
+    <div class="card">
+      <h2>Test de niveau</h2>
+      <p>18 questions from easy A2 to solid B1, with listening. The app then suggests where to start on your path and can skip what you already know.</p>
+      <p class="hint">About 8 minutes.</p>
+      <div class="row"><button class="btn primary" id="lvStart">Commencer le test</button></div>
+      <div id="lvLast"></div>
+    </div>
+  </section>
+  <section class="panel" id="vocab">
+    <div class="card">
+      <h2>Test de vocabulaire</h2>
+      <p>30 words, from very common to rare. The app estimates how many French words you know.</p>
+      <p class="hint">About 4 minutes. A new set of words each time.</p>
+      <div class="row"><button class="btn primary" id="vcStart">Commencer le test</button></div>
+      <div id="vcLast"></div>
+    </div>
+  </section>
+
+  <!-- BILAN -->
+  <section class="panel" id="bilan">
+    <div class="card" id="biIntro">
+      <h2>Trouve tes points faibles</h2>
+      <p>Read 12 short sentences out loud. Each pair targets a sound English speakers often get wrong. The app checks which key words a French recognizer understands and ranks the sounds you need to work on.</p>
+      <p class="hint">Takes about 5 minutes. Speak at a normal pace, as you would in the exam. Don't listen to the model first, it's a test.</p>
+      <div class="row"><button class="btn primary" id="biStart">Commencer le bilan</button></div>
+      <div id="biPrev"></div>
+    </div>
+    <div class="card" id="biRun" hidden>
+      <div class="meta"><span id="biCount"></span><span id="biSkip"></span></div>
+      <p class="sentence" id="biSentence"></p>
+      <button class="mic" id="biMic" data-label="Lire à voix haute">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        <span class="label">Lire à voix haute</span>
+      </button>
+      <div class="result" id="biResult" aria-live="polite"></div>
+      <div class="row split">
+        <button class="btn" id="biRetry" hidden>Réessayer</button>
+        <button class="btn primary" id="biNext" hidden>Phrase suivante</button>
+      </div>
+    </div>
+    <div class="card" id="biDone" hidden>
+      <h2>Tes résultats</h2>
+      <p class="hint">Percentage of key words recognized for each sound. The lowest scores are where to start.</p>
+      <div class="results" id="biResults"></div>
+      <p class="fine">Speech recognition isn't a teacher: a low score is a strong hint, not a verdict. Use it to decide what to drill.</p>
+      <div class="row"><button class="btn" id="biAgain">Refaire le bilan</button></div>
+    </div>
+  </section>
+
+  <!-- SONS -->
+  <section class="panel" id="sons">
+    <div class="chips" id="soChips"></div>
+    <div class="card">
+      <h2 id="soName"></h2>
+      <p class="how" id="soHow"></p>
+
+      <h3>1. Entraîne ton oreille</h3>
+      <p class="hint">Listen, then tap the word you heard. If you can't hear the difference, you can't produce it.</p>
+      <div class="row" style="margin-top:4px"><button class="btn primary" id="earPlay">Écouter un mot</button><span class="hint" id="earScore"></span></div>
+      <div class="pair" id="earOpts" style="margin-top:12px"></div>
+
+      <h3>2. Dis le mot</h3>
+      <p class="bigword" id="sayWord"></p>
+      <div class="row" style="justify-content:center;margin-top:0">
+        <button class="btn" id="sayListen">Modèle</button>
+        <button class="mic small" id="sayMic" data-label="Dire">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <span class="label">Dire</span>
+        </button>
+        <button class="btn" id="sayNext">Autre mot</button>
+      </div>
+      <div class="result" id="sayResult" aria-live="polite"></div>
+
+      <h3>3. En phrase</h3>
+      <div class="meta" style="margin-bottom:6px"><span id="phCount"></span></div>
+      <p class="sentence" id="phSentence" style="font-size:1.4rem"></p>
+      <div class="row" style="margin-top:4px">
+        <button class="btn" id="phListen">Modèle</button>
+        <button class="btn" id="phSlow">Lentement</button>
+        <button class="mic small" id="phMic" data-label="Lire">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <span class="label">Lire</span>
+        </button>
+        <button class="btn" id="phNext">Suivante</button>
+      </div>
+      <div class="result" id="phResult" aria-live="polite"></div>
+    </div>
+    <div class="card">
+      <h2>Le rythme français</h2>
+      <p class="how">English stresses one syllable per word (PHO-to-graph). French doesn't. Give every syllable the same length and put a slight stress only on the last syllable of each group of words: <i>je voudrais un ca<b>fé</b> / s'il vous <b>plaît</b></i>. Flattening your rhythm is one of the fastest ways to sound less anglophone.</p>
+    </div>
+  </section>
+
+  <!-- ORAL -->
+  <section class="panel" id="oral">
+    <div class="chips" id="orChips"></div>
+    <div class="card" id="orIntro"></div>
+    <div class="card" id="orSession" hidden>
+      <div class="meta"><span id="orPhase"></span><span class="timer" id="orTimer">0:00</span></div>
+      <div class="log" id="orLog" aria-live="polite"></div>
+      <div class="live" id="orLive"></div>
+      <button class="mic" id="orMic" data-label="Répondre">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        <span class="label">Répondre</span>
+      </button>
+      <p class="hint" style="text-align:center;margin-top:8px">Tap to start speaking, tap again when you've finished your answer.</p>
+      <div class="row split">
+        <button class="btn" id="orQuit">Abandonner</button>
+        <button class="btn primary" id="orEnd">Terminer et évaluer</button>
+      </div>
+    </div>
+    <div class="card eval" id="orEval" hidden></div>
+  </section>
+
+  <!-- ÉCOUTE -->
+  <section class="panel" id="ecoute">
+    <div class="card">
+      <div class="meta"><span id="ecCount"></span><span id="ecScore"></span></div>
+      <div class="row" style="margin-top:0">
+        <button class="btn primary" id="ecPlay">Écouter</button>
+        <span class="hint" id="ecPlays"></span>
+      </div>
+      <p class="hint" style="margin-top:10px">In the exam, each recording is played twice. Try to answer after two listens.</p>
+      <p class="sentence" id="ecQ" style="font-size:1.25rem;margin-top:14px"></p>
+      <div class="opts" id="ecOpts"></div>
+      <div id="ecReveal" hidden>
+        <h3>Transcription</h3>
+        <p class="hint">Tap a sentence to hear it, then repeat it to work on your accent.</p>
+        <p class="text" id="ecText"></p>
+        <p class="trans" id="ecTrans" style="margin-top:10px"></p>
+        <div class="row" id="ecAct" hidden>
+          <button class="mic small" id="ecMic" data-label="Répéter cette phrase">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+            <span class="label">Répéter cette phrase</span>
+          </button>
+        </div>
+        <div class="result" id="ecResult" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="row split">
+      <button class="btn" id="ecPrev">Précédent</button>
+      <button class="btn" id="ecGen">Nouveau document</button>
+      <button class="btn" id="ecNext">Suivant</button>
+    </div>
+  </section>
+</div>
+
+<div class="player" id="player" role="dialog" aria-modal="true" aria-label="Leçon">
+  <div class="p-top"><button class="p-close" id="pClose" aria-label="Fermer">×</button><div class="p-bar"><i id="pBar"></i></div></div>
+  <div class="p-body" id="pBody"></div>
+  <div class="p-foot" id="pFoot"><div class="p-foot-in"><div class="p-fb" id="pFb" aria-live="polite"></div><div class="p-btns"><button class="btn" id="pSkip" hidden></button><button class="p-main" id="pMain">Continuer</button></div></div></div>
+</div>
+<div class="sheet-bg" id="sheetBg" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" hidden></div>
+
+<div class="modal-bg" id="whatsNew" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="wnTitle"><h2 id="wnTitle"></h2><div id="wnBody"></div><div class="row"><button class="btn primary" id="wnOk" style="flex:1">OK</button></div></div></div>
+<script>
+/* =================== CONTENU =================== */
+const SOUNDS = [
+  {id:"u", name:"U et OU", how:"For U (tu, vu), say \"ee\", then round your lips tightly as if whistling while your tongue stays forward. For OU (tout, vous), pull your tongue back, like English \"food\" but shorter and tenser. English speakers often say U as \"oo\" or \"you\", so tu turns into tout.",
+   pairs:[["tu","tout"],["vu","vous"],["rue","roue"],["dessus","dessous"],["lu","loup"],["pur","pour"]],
+   sents:[{fr:"Tu as vu tout le monde au début du cours ?", keys:["tu","vu","tout","début","cours"]},
+          {fr:"Il a bu une boisson douce dans la rue.", keys:["bu","une","douce","rue"]}],
+   extra:["Je suis sûr que vous avez lu ce journal.","Où est la voiture de Julie ?","Tous les jours, il court autour du musée."]},
+  {id:"e", name:"É, È et E", how:"É (été, les) is short and tight. Smile slightly and don't let it glide into \"ay\" like English \"day\". È (père, très) is more open, like the e in \"bed\". The plain E in le, de, ce is relaxed with slightly rounded lips. Mixing up le/les or de/des changes the meaning.",
+   pairs:[["le","les"],["de","des"],["ce","ces"],["me","mes"],["te","tes"]],
+   sents:[{fr:"J'ai préparé le café et j'ai été très occupé.", keys:["préparé","café","été","très","occupé"]},
+          {fr:"Mon père préfère passer les vacances à la mer.", keys:["père","préfère","les","mer"]}],
+   extra:["Je te donne les clés de ce garage.","Elle a mangé des fruits et du fromage.","Ma mère est née en été."]},
+  {id:"nas", name:"Voyelles nasales", how:"Let the air go through your nose and don't pronounce any n or m after the vowel. AN/EN (vent): mouth open, tongue low. ON (vont): lips rounded, like o. IN/AIN (vin): lips spread, like the a in \"cat\" but through the nose. English speakers usually add an n sound at the end.",
+   pairs:[["vent","vont"],["sans","son"],["blanc","blond"],["lent","long"],["vin","vent"],["bain","banc"]],
+   sents:[{fr:"Mon enfant mange un bon pain blanc.", keys:["mon","enfant","mange","bon","pain","blanc"]},
+          {fr:"Le vent souffle longtemps dans le jardin.", keys:["vent","longtemps","dans","jardin"]}],
+   extra:["Nous allons souvent en vacances en montagne.","Il prend le train à cinq heures.","Ton oncle a cent ans maintenant."]},
+  {id:"r", name:"Le R français", how:"The French R comes from the back of the throat, close to a light gargle or the ch in Scottish \"loch\", but with your voice on. Keep the tip of your tongue resting behind your bottom teeth. Never curl your tongue like the English R.",
+   pairs:[["roue","loue"],["riz","lit"],["prix","pli"],["rond","long"]],
+   sents:[{fr:"Le train repart rapidement vers Rennes.", keys:["train","repart","rapidement","rennes"]},
+          {fr:"Mon frère arrive à trois heures.", keys:["frère","arrive","trois","heures"]}],
+   extra:["Il préfère rester à Paris pour travailler.","La rue est très calme le dimanche.","Je voudrais réserver une chambre."]},
+  {id:"eu", name:"EU et O", how:"EU (deux, peu): say é, then round your lips. O (dos, beau): pure and short, with lips tightly rounded. Don't let it slide into \"oh-oo\" like English \"go\". Hold the same mouth shape from start to end.",
+   pairs:[["deux","dos"],["peu","pot"],["feu","faux"],["ceux","seau"],["veut","vaut"]],
+   sents:[{fr:"Il veut deux œufs bien chauds.", keys:["veut","deux","œufs","chauds"]},
+          {fr:"Ce beau gâteau au chocolat est délicieux.", keys:["beau","gâteau","chocolat","délicieux"]}],
+   extra:["Je peux venir un peu plus tôt ?","Le bureau est fermé aujourd'hui.","Ils sont heureux de voir le château."]},
+  {id:"fin", name:"Lettres finales et liaisons", how:"Most final consonants are silent: petit, grand, vert. In the feminine form, the consonant is pronounced: petite, grande, verte. Before a vowel, some silent letters link to the next word: les amis sounds like \"lé-z-ami\", nous avons like \"nou-z-avon\".",
+   pairs:[["petit","petite"],["grand","grande"],["vert","verte"],["gris","grise"],["chaud","chaude"]],
+   sents:[{fr:"Les petits enfants sont allés chez leurs amis.", keys:["petits","enfants","allés","chez","amis"]},
+          {fr:"Nous avons visité un grand appartement.", keys:["nous","avons","grand","appartement"]}],
+   extra:["Ils ont acheté une petite maison verte.","Elle est arrivée très en retard.","Mes amis habitent dans un grand immeuble."]}
+];
+
+const HOMO = {
+  tu:["t'es"],tout:["toux","toute"],vu:["vue"],vous:[],rue:["ru"],roue:["roux"],dessus:[],dessous:[],lu:["lue"],loup:["loue","lou"],pur:["pure"],pour:[],
+  le:[],les:["lait","l'ai"],de:[],des:["dès","dé"],ce:["se"],ces:["ses","c'est","sais","sait"],me:[],mes:["mais","mets","met"],te:[],tes:["thé","t'es"],
+  vent:["vend","vends","van"],vont:["von"],sans:["sang","cent","s'en","sent"],son:["sont"],blanc:["blanche"],blond:[],lent:["l'an","lents"],long:["l'on"],vin:["vingt","vain","vint"],bain:["bin"],banc:["ban"],
+  loue:["loup","lou"],riz:["ris","rit"],lit:["lie","li"],prix:["pris","prie"],pli:["plie"],rond:["rompt"],
+  deux:[],dos:["do"],peu:["peux","peut"],pot:["peau","pau"],feu:["feux"],faux:["faut","fau"],ceux:[],seau:["sot","saut","sceau"],veut:["veux"],vaut:["veau","vos"],
+  petit:["petits"],petite:["petites"],grand:["grands"],grande:["grandes"],vert:["verre","vers","ver","verts"],verte:["vertes"],gris:[],grise:["grises"],chaud:["chaux","chauds","show"],chaude:["chaudes"]
+};
+
+const LISTEN = [
+  {fr:"Bonjour, ici Julie, de la pharmacie Martin. Votre commande est arrivée, vous pouvez passer la chercher à partir de demain matin. Attention, nous sommes fermés le lundi.", en:"Hello, this is Julie from Martin pharmacy. Your order has arrived, you can pick it up from tomorrow morning. Note that we're closed on Mondays.", q:"Quand peut-on récupérer la commande ?", o:["Aujourd'hui","À partir de demain matin","Seulement le lundi"], a:1},
+  {fr:"Mesdames et messieurs, le TGV à destination de Lyon partira avec un retard d'environ vingt minutes. Nous vous prions de nous excuser pour la gêne occasionnée.", en:"Ladies and gentlemen, the TGV to Lyon will leave about twenty minutes late. We apologize for the inconvenience.", q:"Quel est le problème ?", o:["Le train est annulé","Le train a du retard","Le train change de quai"], a:1},
+  {fr:"Salut Thomas, c'est Karim. Pour samedi, finalement, on ne va pas au cinéma, il fait trop beau. On se retrouve plutôt au parc à quinze heures, et chacun apporte quelque chose à manger.", en:"Hi Thomas, it's Karim. For Saturday, we're not going to the movies after all, the weather's too nice. Let's meet at the park at 3 p.m. instead, and everyone brings something to eat.", q:"Qu'est-ce que les amis vont faire samedi ?", o:["Aller au cinéma","Pique-niquer au parc","Dîner au restaurant"], a:1},
+  {fr:"Selon une étude récente, les Français passent en moyenne deux heures par jour sur leur téléphone. Les chercheurs conseillent de ne pas l'utiliser pendant l'heure qui précède le coucher, pour mieux dormir.", en:"According to a recent study, French people spend on average two hours a day on their phone. Researchers advise not using it in the hour before bed, to sleep better.", q:"Que conseillent les chercheurs ?", o:["Utiliser son téléphone moins de deux heures","Ne pas utiliser son téléphone avant de dormir","Éteindre son téléphone au travail"], a:1},
+  {fr:"La médiathèque organise un atelier de cuisine gratuit pour les enfants de huit à douze ans, mercredi après-midi. Les places sont limitées, et l'inscription se fait à l'accueil.", en:"The media library is holding a free cooking workshop for children aged 8 to 12 on Wednesday afternoon. Places are limited, and registration is at the front desk.", q:"Comment s'inscrire à l'atelier ?", o:["Par téléphone","Sur internet","À l'accueil de la médiathèque"], a:2},
+  {fr:"Je travaille dans un hôtel depuis cinq ans. Ce que j'aime le plus, c'est rencontrer des gens du monde entier. Par contre, les horaires de nuit sont vraiment fatigants.", en:"I've worked in a hotel for five years. What I like most is meeting people from all over the world. On the other hand, the night shifts are really tiring.", q:"Qu'est-ce qui est difficile dans son travail ?", o:["Parler des langues étrangères","Les horaires de nuit","Le salaire"], a:1},
+  {fr:"Bonjour madame, je vous appelle au sujet de l'appartement. Le loyer de six cents euros, est-ce qu'il comprend le chauffage et l'électricité, ou c'est en plus ?", en:"Hello madam, I'm calling about the apartment. Does the 600-euro rent include heating and electricity, or is that extra?", q:"Pourquoi est-ce que la personne appelle ?", o:["Pour se plaindre du chauffage","Pour poser une question sur le loyer","Pour annuler une visite"], a:1},
+  {fr:"À partir du premier septembre, les bus de la ligne trois ne s'arrêteront plus devant la gare. Un nouvel arrêt sera installé deux cents mètres plus loin, rue Victor Hugo.", en:"From September 1st, line 3 buses will no longer stop in front of the station. A new stop will be set up 200 metres further on, on rue Victor Hugo.", q:"Qu'est-ce qui change ?", o:["La ligne trois est supprimée","L'arrêt devant la gare est déplacé","Les bus passent plus souvent"], a:1}
+];
+
+const SCENARIOS = [
+  {sit:"Vous avez acheté un pull dans un magasin, mais il est trop petit et vous avez perdu le ticket de caisse. Vous voulez l'échanger.", you:"le client ou la cliente", role:"le vendeur ou la vendeuse, qui hésite parce qu'il n'y a pas de ticket"},
+  {sit:"Votre ami français veut passer les vacances à la plage. Vous préférez la montagne. Vous essayez de le convaincre.", you:"vous-même", role:"l'ami, qui préfère vraiment la plage et a ses arguments"},
+  {sit:"Votre voisin fait souvent du bruit tard le soir. Vous allez le voir pour trouver une solution.", you:"vous-même", role:"le voisin, un peu surpris et sur la défensive"},
+  {sit:"Vous voulez vous inscrire dans une salle de sport, mais le prix vous semble trop élevé. Vous discutez avec l'employé pour obtenir une réduction.", you:"le futur client", role:"l'employé de la salle de sport"},
+  {sit:"Un collègue propose d'organiser la fête de départ d'une collègue dans un restaurant cher. Vous préférez une autre idée et vous en discutez.", you:"vous-même", role:"le collègue, attaché à son idée de restaurant"}
+];
+
+const DOCS = [
+  {t:"Le télétravail, une chance pour tous ?", p:"Depuis quelques années, de plus en plus de salariés travaillent de chez eux plusieurs jours par semaine. Ils gagnent du temps de transport et se disent moins stressés. Mais certains managers s'inquiètent : sans contacts quotidiens, l'esprit d'équipe risque de disparaître, et certains employés se sentent isolés."},
+  {t:"Bientôt plus de téléphones à l'école ?", p:"Plusieurs collèges ont décidé d'interdire complètement les téléphones portables, même pendant les récréations. Selon les directeurs, les élèves sont plus attentifs et se parlent davantage. Certains parents ne sont pas d'accord : ils veulent pouvoir joindre leurs enfants à tout moment."},
+  {t:"Moins de voitures en centre-ville", p:"De nombreuses villes françaises réservent leur centre aux piétons, aux vélos et aux transports en commun. L'air est plus propre et les rues plus calmes. Mais des commerçants craignent de perdre des clients, et les habitants de la campagne trouvent plus difficile de venir en ville."},
+  {t:"Les jeunes lisent-ils encore ?", p:"Selon un sondage récent, les jeunes de 15 à 25 ans lisent moins de livres qu'il y a vingt ans. En revanche, ils lisent beaucoup sur internet : articles, réseaux sociaux, mangas numériques. Pour certains spécialistes, ce n'est pas une crise de la lecture, mais une nouvelle façon de lire."}
+];
+
+const PARTS = [
+  {id:1, name:"1. Entretien dirigé", target:180,
+   desc:"About 2 to 3 minutes, no preparation. The examiner asks you to introduce yourself and asks questions about your life, studies or work, hobbies and plans. Give developed answers, not just one sentence."},
+  {id:2, name:"2. Interaction", target:240,
+   desc:"About 3 to 4 minutes, no preparation. You act out an everyday situation with the examiner, who plays a role. You need to explain, negotiate and react."},
+  {id:3, name:"3. Point de vue", target:180,
+   desc:"10 minutes of preparation, then about 5 to 7 minutes. You read a short document, identify the topic it raises, and give your opinion in a structured presentation of about 3 minutes. The examiner then asks you some questions."}
+];
+
+/* =================== OUTILS =================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const shuffle = a => a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
+const fmt = s => `${Math.floor(s/60)}:${String(Math.abs(s)%60).padStart(2,"0")}`;
+
+async function store(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+async function fetchStored(key){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+
+/* Voix */
+let rate = 0.95, voice = null, voices = [];
+$("settingsBtn").onclick = () => { const o = $("settings").classList.toggle("open"); $("settingsBtn").setAttribute("aria-expanded", o); };
+$("rateIn").oninput = e => { rate = parseFloat(e.target.value); $("rateOut").textContent = rate.toFixed(2); };
+function loadVoices(){
+  if (!("speechSynthesis" in window)) return;
+  const all = speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().replace("_","-").startsWith("fr"));
+  const rank = v => { const l = v.lang.toUpperCase(); return l.includes("FR-FR") ? 0 : l.includes("CA") ? 2 : 1; };
+  voices = all.sort((a,b) => rank(a) - rank(b));
+  const sel = $("voiceSel");
+  if (!voices.length){ sel.innerHTML = "<option>Voix par défaut</option>"; $("voiceHint").textContent = "No French voice found on this device."; return; }
+  const prev = voice ? voice.name : null;
+  sel.innerHTML = voices.map((v,i) => `<option value="${i}">${esc(v.name)} (${esc(v.lang)})</option>`).join("");
+  const k = voices.findIndex(v => v.name === prev);
+  sel.value = k >= 0 ? k : 0; voice = voices[sel.value];
+  $("voiceHint").textContent = rank(voices[0]) === 0 ? "" : "No France French voice found. Add one in your device's speech settings for the best model.";
+}
+$("voiceSel").onchange = e => voice = voices[e.target.value] || null;
+if ("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(text, slow){
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = voice ? voice.lang : "fr-FR"; if (voice) u.voice = voice;
+  u.rate = slow ? Math.max(0.5, rate*0.7) : rate;
+  speechSynthesis.speak(u);
+}
+
+/* Reconnaissance */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) $("noSR").classList.add("show");
+let activeRec = null, longRec = null;
+function setMic(btn, on, label){
+  btn.classList.toggle("listening", on);
+  btn.querySelector(".label").textContent = on ? (label || "J'écoute… touche pour arrêter") : btn.dataset.label;
+}
+function errMsg(err){
+  if (["not-allowed","service-not-allowed","start-failed","audio-capture"].includes(err)) return "The microphone is blocked here. Open this file in Safari or Chrome and allow microphone access.";
+  if (err === "no-speech") return "Je n'ai rien entendu. Touche le micro et parle tout de suite.";
+  if (err === "network") return "Speech recognition needs an internet connection.";
+  return "La reconnaissance n'a pas fonctionné. Réessaie.";
+}
+function noMic(){ $("noSR").classList.add("show"); $("noSR").scrollIntoView({behavior:"smooth",block:"center"}); }
+function stopAll(){
+  if (activeRec){ try{ activeRec.abort(); }catch(e){} }
+  if (longRec){ longRec.userStop = true; longRec.cancel = true; try{ longRec.r.abort(); }catch(e){} }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+/* courte : une phrase */
+function listen(btn, onDone, onInterim){
+  if (!SR) return noMic();
+  if (activeRec){ activeRec.stop(); return; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  const r = new SR(); r.lang = "fr-FR"; r.interimResults = true; r.maxAlternatives = 4; r.continuous = false;
+  let alts = null, err = null, last = "", silence = null;
+  r.onresult = e => {
+    const res = Array.from(e.results);
+    const joined = res.map(x => x[0].transcript).join(" ").trim();
+    last = joined;
+    if (onInterim) onInterim(joined);
+    if (res.every(x => x.isFinal)) alts = res.length === 1 ? Array.from(res[0]).map(a => a.transcript) : [joined];
+    // Safari on iPhone often never finishes by itself: stop after 2 s of silence
+    clearTimeout(silence);
+    silence = setTimeout(() => { try { r.stop(); } catch(x){} }, 2000);
+  };
+  r.onerror = e => err = e.error;
+  r.onend = () => {
+    clearTimeout(silence); activeRec = null; setMic(btn, false);
+    // Safari often ends without a "final" result: use what it heard
+    if (!alts && last) alts = [last];
+    onDone(alts, alts ? null : err);
+  };
+  try { r.start(); activeRec = r; setMic(btn, true); } catch(e){ onDone(null, "start-failed"); }
+}
+/* longue : réponses d'examen */
+function listenLong(btn, onUpdate, onDone){
+  if (!SR) return noMic();
+  if (longRec){ longRec.userStop = true; try{ longRec.r.stop(); }catch(e){} return; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  const st = {finals:"", interim:"", userStop:false, cancel:false, restarts:0, err:null, r:null};
+  const start = () => {
+    const r = new SR(); r.lang = "fr-FR"; r.continuous = true; r.interimResults = true;
+    r.onresult = e => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++){
+        if (e.results[i].isFinal) st.finals += " " + e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      st.interim = interim;
+      onUpdate((st.finals + " " + interim).trim());
+    };
+    r.onerror = e => st.err = e.error;
+    r.onend = () => {
+      if (st.interim){ st.finals += " " + st.interim; st.interim = ""; }
+      if (!st.userStop && (!st.err || st.err === "no-speech") && st.restarts < 300){
+        st.restarts++; st.err = null;
+        try { start(); return; } catch(e){}
+      }
+      longRec = null; setMic(btn, false);
+      if (!st.cancel) onDone(st.finals.trim(), st.err);
+    };
+    st.r = r; r.start();
+  };
+  try { start(); longRec = st; setMic(btn, true, "Je t'écoute… touche quand tu as fini"); }
+  catch(e){ onDone("", "start-failed"); }
+}
+
+/* Comparaison */
+const NUM = {"1":"un","2":"deux","3":"trois","4":"quatre","5":"cinq","6":"six","7":"sept","8":"huit","9":"neuf","10":"dix","12":"douze","15":"quinze","20":"vingt","100":"cent"};
+function toks(s){
+  return s.toLowerCase().replace(/œ/g,"oe").replace(/æ/g,"ae").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[’'\-]/g," ").replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean)
+    .flatMap(t => (NUM[t] || t).split(" "));
+}
+function lcs(a, b){
+  const n=a.length, m=b.length, dp=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+  for (let i=n-1;i>=0;i--) for (let j=m-1;j>=0;j--) dp[i][j] = a[i]===b[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+  const hit = new Set(); let i=0, j=0;
+  while (i<n && j<m){ if (a[i]===b[j]){ hit.add(i); i++; j++; } else if (dp[i+1][j] >= dp[i][j+1]) i++; else j++; }
+  return hit;
+}
+function compare(target, alts){
+  const words = target.split(" "), flat = [], owner = [];
+  words.forEach((w,i) => toks(w).forEach(t => { flat.push(t); owner.push(i); }));
+  let best = {hit:new Set(), heard:alts[0] || ""};
+  alts.forEach(alt => { const h = lcs(flat, toks(alt)); if (h.size > best.hit.size) best = {hit:h, heard:alt}; });
+  const status = words.map((w,i) => {
+    const idx = owner.map((o,k) => o===i ? k : -1).filter(k => k>=0);
+    if (!idx.length) return "";
+    return idx.filter(k => best.hit.has(k)).length / idx.length >= 0.5 ? "ok" : "miss";
+  });
+  return {pct: flat.length ? Math.round(best.hit.size/flat.length*100) : 0, heard:best.heard, status};
+}
+function renderWords(el, text, status){ el.innerHTML = text.split(" ").map((w,i) => `<span class="w ${status ? status[i] : ""}">${esc(w)}</span>`).join(" "); }
+function feedback(p){
+  if (p >= 90) return "Très clair !";
+  if (p >= 70) return "Bien. Regarde les mots en orange.";
+  if (p >= 40) return "Écoute le modèle et réessaie.";
+  return "Réessaie plus lentement.";
+}
+function showResult(box, res){
+  box.innerHTML = `<div class="score">${res.pct} %<small>${feedback(res.pct)}</small></div><p class="heard">J'ai entendu : <i>${esc(res.heard)}</i></p>`;
+  box.classList.add("show");
+}
+function showError(box, err){ box.innerHTML = `<p style="margin:0">${esc(errMsg(err))}</p>`; box.classList.add("show"); }
+function showLive(box, t){ box.innerHTML = `<p class="heard" style="margin:0">… <i>${esc(t)}</i></p>`; box.classList.add("show"); }
+
+/* API DeepSeek (compatible OpenAI) */
+const API = {
+  key: localStorage.getItem("ds-key") || "",
+  model: localStorage.getItem("ds-model") || "deepseek-chat",
+  base: localStorage.getItem("ds-base") || "https://api.deepseek.com"
+};
+$("keyIn").value = API.key; $("modelIn").value = API.model; $("baseIn").value = API.base;
+function saveApi(){
+  API.key = $("keyIn").value.trim();
+  API.model = $("modelIn").value.trim() || "deepseek-chat";
+  API.base = ($("baseIn").value.trim() || "https://api.deepseek.com").replace(/\/+$/,"");
+  try{ localStorage.setItem("ds-key", API.key); localStorage.setItem("ds-model", API.model); localStorage.setItem("ds-base", API.base); }catch(e){}
+}
+async function askAI(system, messages, json, maxTokens){
+  if (!API.key) throw new Error("NO_KEY");
+  const body = {model:API.model, max_tokens:maxTokens || 1000, messages:[{role:"system", content:system}, ...messages]};
+  if (json && !API.model.includes("reasoner")) body.response_format = {type:"json_object"};
+  let res;
+  try {
+    res = await fetch(API.base + "/chat/completions", {
+      method:"POST",
+      headers:{"Content-Type":"application/json", "Authorization":"Bearer " + API.key},
+      body: JSON.stringify(body)
+    });
+  } catch(e){ throw new Error("NETWORK"); }
+  if (res.status === 401) throw new Error("BAD_KEY");
+  if (res.status === 402) throw new Error("NO_CREDIT");
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  return (data.choices && data.choices[0] && data.choices[0].message.content || "").trim();
+}
+function apiErr(e){
+  const m = e && e.message;
+  if (m === "NO_KEY") return "Add your DeepSeek API key in Réglages (top right).";
+  if (m === "BAD_KEY") return "DeepSeek rejected the API key. Check it in Réglages.";
+  if (m === "NO_CREDIT") return "Your DeepSeek account has no credit left. Top it up on platform.deepseek.com.";
+  if (m === "NETWORK") return "Couldn't reach DeepSeek. Check your internet connection.";
+  if (m === "INCOMPLETE" || e instanceof SyntaxError) return "DeepSeek's answer came back incomplete. Try again.";
+  return "DeepSeek returned an error (" + m + "). Try again in a moment.";
+}
+$("keySave").onclick = () => { saveApi(); $("keyMsg").textContent = API.key ? "Enregistré." : "Clé effacée."; };
+$("keyTest").onclick = async () => {
+  saveApi(); $("keyMsg").textContent = "Test en cours…";
+  try { await askAI("Réponds seulement : ok", [{role:"user", content:"test"}]); $("keyMsg").textContent = "La clé fonctionne."; }
+  catch(e){ $("keyMsg").textContent = apiErr(e); }
+};
+const parseJSON = t => JSON.parse(t.replace(/```json|```/g,"").trim());
+
+/* Onglets */
+const GROUPS = {parcours:[["parcours","Parcours"]], tests:[["niveau","Test de niveau"],["vocab","Vocabulaire"]], examen:[["oral","Oral"],["ecoute","Écoute"]], accent:[["bilan","Bilan"],["sons","Sons"]]};
+const lastPanel = {parcours:"parcours", tests:"niveau", examen:"oral", accent:"bilan"};
+const groupOf = p => Object.keys(GROUPS).find(g => GROUPS[g].some(x => x[0] === p));
+function goTab(name){
+  stopAll();
+  const g = groupOf(name); lastPanel[g] = name;
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x.dataset.group === g));
+  const sub = $("subnav");
+  sub.hidden = GROUPS[g].length < 2;
+  sub.innerHTML = GROUPS[g].map(([id,label]) => `<button class="chip" aria-pressed="${id === name}" data-p="${id}">${label}</button>`).join("");
+  sub.querySelectorAll(".chip").forEach(c => c.onclick = () => goTab(c.dataset.p));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === name));
+  if (name === "parcours" && typeof renderTree === "function") renderTree();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => goTab(lastPanel[t.dataset.group]));
+
+/* =================== BILAN =================== */
+const BI_ITEMS = SOUNDS.flatMap(s => s.sents.map(x => ({...x, sound:s.id})));
+let bi = 0, biScores = {}, biLast = null, saved = null;
+
+function biRender(){
+  const it = BI_ITEMS[bi];
+  $("biCount").textContent = `Phrase ${bi+1} sur ${BI_ITEMS.length}`;
+  renderWords($("biSentence"), it.fr, null);
+  $("biResult").classList.remove("show");
+  $("biRetry").hidden = true; $("biNext").hidden = true; biLast = null;
+  $("biSkip").innerHTML = `<button class="btn" id="biSkipBtn" style="padding:4px 10px;font-size:.82rem">Passer</button>`;
+  $("biSkipBtn").onclick = () => { biLast = {ok:0, total:it.keys.length}; biAdvance(); };
+}
+$("biStart").onclick = () => { bi = 0; biScores = {}; $("biIntro").hidden = true; $("biDone").hidden = true; $("biRun").hidden = false; biRender(); };
+$("biAgain").onclick = () => $("biStart").onclick();
+$("biMic").onclick = () => listen($("biMic"), (alts, err) => {
+  if (!alts) return showError($("biResult"), err || "no-speech");
+  const it = BI_ITEMS[bi];
+  const res = compare(it.fr, alts);
+  const heard = new Set(toks(res.heard));
+  const okKeys = it.keys.filter(k => toks(k).every(t => heard.has(t)));
+  biLast = {ok: okKeys.length, total: it.keys.length};
+  renderWords($("biSentence"), it.fr, res.status);
+  $("biResult").innerHTML = `<p class="heard" style="margin:0">J'ai entendu : <i>${esc(res.heard)}</i></p><p class="fine">Mots clés reconnus : ${okKeys.length} sur ${it.keys.length}</p>`;
+  $("biResult").classList.add("show");
+  $("biRetry").hidden = false; $("biNext").hidden = false;
+  $("biNext").textContent = bi === BI_ITEMS.length-1 ? "Voir mes résultats" : "Phrase suivante";
+}, t => showLive($("biResult"), t));
+$("biRetry").onclick = () => { renderWords($("biSentence"), BI_ITEMS[bi].fr, null); $("biResult").classList.remove("show"); $("biRetry").hidden = true; $("biNext").hidden = true; };
+$("biNext").onclick = biAdvance;
+function biAdvance(){
+  const s = BI_ITEMS[bi].sound;
+  biScores[s] = biScores[s] || {ok:0,total:0};
+  biScores[s].ok += biLast.ok; biScores[s].total += biLast.total;
+  if (bi < BI_ITEMS.length-1){ bi++; biRender(); return; }
+  const results = {};
+  SOUNDS.forEach(x => { const v = biScores[x.id]; results[x.id] = v && v.total ? Math.round(v.ok/v.total*100) : 0; });
+  saved = {date: new Date().toISOString(), results};
+  store("bilan-v1", saved);
+  $("biRun").hidden = true; $("biDone").hidden = false; $("biIntro").hidden = true;
+  showBilan($("biResults"), results, true);
+  soRenderChips();
+}
+function showBilan(el, results, withButtons){
+  const order = SOUNDS.slice().sort((a,b) => results[a.id] - results[b.id]);
+  el.innerHTML = order.map((s,i) => `<div class="res-row">
+      <span class="name">${esc(s.name)}${i < 2 && results[s.id] < 85 ? '<span class="tag">Priorité</span>' : ""}</span>
+      <span class="pct">${results[s.id]} %</span>
+      <div class="bar"><i class="${results[s.id] < 70 ? "weak" : ""}" style="width:0"></i></div>
+      ${withButtons ? `<div style="grid-column:1/-1"><button class="btn" data-go="${s.id}" style="padding:6px 12px;font-size:.88rem">Travailler ce son</button></div>` : ""}
+    </div>`).join("");
+  requestAnimationFrame(() => el.querySelectorAll(".bar i").forEach((b,i) => b.style.width = results[order[i].id] + "%"));
+  el.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { soSelect(b.dataset.go); goTab("sons"); });
+}
+
+/* =================== SONS =================== */
+let so = SOUNDS[0], earWord = null, earStats = {ok:0,n:0}, sayW = null, sayOther = null, ph = 0;
+function soRenderChips(){
+  const weak = saved ? SOUNDS.slice().sort((a,b) => saved.results[a.id]-saved.results[b.id]).slice(0,2).map(s => s.id) : [];
+  $("soChips").innerHTML = SOUNDS.map(s => `<button class="chip" aria-pressed="${s.id===so.id}" data-id="${s.id}">${weak.includes(s.id) && saved.results[s.id] < 85 ? '<span class="dot" aria-label="priorité"></span>' : ""}${esc(s.name)}</button>`).join("");
+  $("soChips").querySelectorAll(".chip").forEach(c => c.onclick = () => soSelect(c.dataset.id));
+}
+function soSelect(id){
+  stopAll();
+  so = SOUNDS.find(s => s.id === id); ph = 0; earWord = null; earStats = {ok:0,n:0};
+  soRenderChips();
+  $("soName").textContent = so.name;
+  $("soHow").textContent = so.how;
+  $("earOpts").innerHTML = ""; $("earScore").textContent = "";
+  $("earPlay").textContent = "Écouter un mot"; $("earPlay").onclick = earPlayOriginal;
+  sayNew(); phRender();
+}
+$("earPlay").onclick = () => {
+  const pair = so.pairs[Math.floor(Math.random()*so.pairs.length)];
+  const order = shuffle(pair.slice());
+  earWord = pair[Math.floor(Math.random()*2)];
+  speak(earWord);
+  $("earPlay").textContent = "Réécouter";
+  $("earPlay").onclick = () => speak(earWord);
+  $("earOpts").innerHTML = order.map(w => `<button class="opt" data-w="${esc(w)}">${esc(w)}</button>`).join("");
+  $("earOpts").querySelectorAll(".opt").forEach(b => b.onclick = () => {
+    const right = b.dataset.w === earWord;
+    earStats.n++; if (right) earStats.ok++;
+    $("earOpts").querySelectorAll(".opt").forEach(x => { x.disabled = true; if (x.dataset.w === earWord) x.classList.add("correct"); else if (x === b) x.classList.add("wrong"); });
+    $("earScore").textContent = `${earStats.ok} / ${earStats.n}`;
+    $("earPlay").textContent = "Mot suivant";
+    $("earPlay").onclick = earNext;
+  });
+};
+const earPlayOriginal = $("earPlay").onclick;
+function earNext(){ $("earPlay").onclick = earPlayOriginal; earPlayOriginal(); }
+function sayNew(){
+  const pair = so.pairs[Math.floor(Math.random()*so.pairs.length)];
+  const i = Math.floor(Math.random()*2);
+  sayW = pair[i]; sayOther = pair[1-i];
+  $("sayWord").textContent = sayW;
+  $("sayResult").classList.remove("show");
+}
+function matches(alts, word){
+  const accepted = [word, ...(HOMO[word] || [])].map(w => toks(w).join(" "));
+  return alts.some(a => { const t = toks(a); const j = t.join(" "); return accepted.some(x => j === x || (x.indexOf(" ") < 0 && t.includes(x))); });
+}
+$("sayListen").onclick = () => speak(sayW);
+$("sayNext").onclick = sayNew;
+$("sayMic").onclick = () => listen($("sayMic"), (alts, err) => {
+  if (!alts) return showError($("sayResult"), err || "no-speech");
+  const top = alts.slice(0,2);
+  const ok = matches(top, sayW);
+  const wrongWay = !ok && matches([alts[0]], sayOther);
+  $("sayResult").innerHTML = ok
+    ? `<div class="score" style="color:var(--ok)">Oui !<small>« ${esc(sayW)} » bien reconnu.</small></div>`
+    : `<div class="score" style="color:var(--miss)">Pas encore<small>${wrongWay ? `On a entendu « ${esc(sayOther)} ».` : ""}</small></div>`;
+  $("sayResult").innerHTML += `<p class="heard">J'ai entendu : <i>${esc(alts[0])}</i></p>${ok ? "" : `<p class="fine">Listen to the model and reread the tip above. Single words are hard for recognizers, so try two or three times.</p>`}`;
+  $("sayResult").classList.add("show");
+}, t => showLive($("sayResult"), t));
+function phList(){ return [...so.sents.map(s => s.fr), ...so.extra]; }
+function phRender(){
+  const L = phList();
+  $("phCount").textContent = `Phrase ${ph+1} sur ${L.length}`;
+  renderWords($("phSentence"), L[ph], null);
+  $("phResult").classList.remove("show");
+}
+$("phListen").onclick = () => speak(phList()[ph]);
+$("phSlow").onclick = () => speak(phList()[ph], true);
+$("phNext").onclick = () => { ph = (ph+1) % phList().length; phRender(); };
+$("phMic").onclick = () => listen($("phMic"), (alts, err) => {
+  if (!alts) return showError($("phResult"), err || "no-speech");
+  const t = phList()[ph], res = compare(t, alts);
+  renderWords($("phSentence"), t, res.status); showResult($("phResult"), res);
+}, t => showLive($("phResult"), t));
+
+/* =================== ORAL =================== */
+let part = PARTS[0], scen = null, docu = null, history = [], timerId = null, tStart = 0, phase = "", busy = false;
+const EXAM_BASE = `Tu joues l'examinateur de l'épreuve de production orale du DELF B1. Le candidat est anglophone, niveau intermédiaire. Ses réponses viennent de la reconnaissance vocale : ignore la ponctuation et les erreurs de transcription évidentes. Ne corrige jamais le candidat pendant l'épreuve et ne donne pas de conseils. Parle un français standard de France, clair, naturel, avec le vouvoiement (sauf si ton rôle exige le tutoiement). Réponds uniquement avec les paroles de ton personnage, sans didascalies, sans guillemets, en 1 à 3 phrases.`;
+function sysFor(){
+  if (part.id === 1) return EXAM_BASE + `\nPartie 1, entretien dirigé (2 à 3 minutes, sans préparation). Commence par saluer le candidat et lui demander de se présenter. Ensuite, pose une seule question à la fois sur sa vie, sa famille, ses études ou son travail, ses loisirs, ses goûts et ses projets. Rebondis sur ce qu'il dit pour qu'il développe.`;
+  if (part.id === 2) return EXAM_BASE + `\nPartie 2, exercice en interaction (3 à 4 minutes). Situation donnée au candidat : ${scen.sit} Le candidat joue : ${scen.you}. Tu joues : ${scen.role}. Commence directement la scène dans ton rôle. Crée une ou deux objections réalistes pour que le candidat doive expliquer, négocier ou convaincre, puis accepte un compromis raisonnable si ses arguments sont bons.`;
+  return EXAM_BASE + `\nPartie 3, expression d'un point de vue. Document lu par le candidat : « ${docu.t} » ${docu.p}\nLe candidat vient de faire son exposé. Pose-lui une seule question à la fois pour qu'il précise, défende ou nuance son opinion, avec des exemples concrets. Tu peux jouer l'avocat du diable. Après 3 ou 4 questions, remercie-le et dis que l'épreuve est terminée.`;
+}
+function orRenderChips(){
+  $("orChips").innerHTML = PARTS.map(p => `<button class="chip" aria-pressed="${p.id===part.id}" data-id="${p.id}">${esc(p.name)}</button>`).join("");
+  $("orChips").querySelectorAll(".chip").forEach(c => c.onclick = () => { if (busy) return; part = PARTS.find(p => p.id === +c.dataset.id); orReset(); });
+}
+function orReset(){
+  stopAll(); clearInterval(timerId); history = []; busy = false;
+  if (part.id === 2 && !scen) scen = SCENARIOS[Math.floor(Math.random()*SCENARIOS.length)];
+  if (part.id === 3 && !docu) docu = DOCS[Math.floor(Math.random()*DOCS.length)];
+  orRenderChips();
+  $("orSession").hidden = true; $("orEval").hidden = true; $("orIntro").hidden = false;
+  let extra = "";
+  if (part.id === 2) extra = `<div class="doc" style="margin-top:12px"><h4>Situation</h4><p>${esc(scen.sit)}</p><p class="hint" style="margin-top:8px;font-family:var(--sans)">Vous jouez ${esc(scen.you)}. L'examinateur joue ${esc(scen.role.split(",")[0])}.</p></div><div class="row"><button class="btn" id="orShuffle">Autre situation</button></div>`;
+  if (part.id === 3) extra = `<div class="doc" style="margin-top:12px"><h4>${esc(docu.t)}</h4><p>${esc(docu.p)}</p></div><p class="hint" style="margin-top:10px">Consigne : dégagez le thème soulevé par le document et présentez votre opinion sous la forme d'un exposé d'environ 3 minutes, avec une introduction, des arguments, des exemples et une conclusion.</p><div class="row"><button class="btn" id="orShuffle">Autre document</button></div>`;
+  $("orIntro").innerHTML = `<h2>${esc(part.name)}</h2><p>${esc(part.desc)}</p>${extra}
+    <div class="row"><button class="btn primary" id="orGo">${part.id === 3 ? "Commencer la préparation (10 min)" : "Commencer"}</button></div>
+    <div id="orPrep"></div>`;
+  const sh = $("orShuffle");
+  if (sh) sh.onclick = () => {
+    if (part.id === 2){ let n; do { n = SCENARIOS[Math.floor(Math.random()*SCENARIOS.length)]; } while (n === scen); scen = n; }
+    else { let n; do { n = DOCS[Math.floor(Math.random()*DOCS.length)]; } while (n === docu); docu = n; }
+    orReset();
+  };
+  $("orGo").onclick = part.id === 3 ? startPrep : startSession;
+}
+function startTimer(el, from, countdown, onZero){
+  clearInterval(timerId); let s = from; el.textContent = fmt(s); el.classList.remove("over");
+  timerId = setInterval(() => {
+    s += countdown ? -1 : 1;
+    if (countdown && s <= 0){ clearInterval(timerId); el.textContent = "0:00"; onZero && onZero(); return; }
+    el.textContent = (!countdown && s < 0 ? "-" : "") + fmt(s);
+    if (!countdown && s > part.target) el.classList.add("over");
+  }, 1000);
+}
+function startPrep(){
+  $("orGo").hidden = true;
+  $("orPrep").innerHTML = `<div class="row split"><span class="timer" id="prepT">10:00</span><button class="btn primary" id="prepDone">Je suis prêt</button></div>
+    <p class="hint" style="margin-top:8px">Plan your talk: the topic, your opinion, 2 or 3 arguments with examples, a conclusion. Note key words only, not full sentences.</p>`;
+  startTimer($("prepT"), 600, true, startSession);
+  $("prepDone").onclick = startSession;
+}
+function addLog(cls, text, click){
+  const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text;
+  if (click) d.onclick = click;
+  $("orLog").appendChild(d); $("orLog").scrollTop = $("orLog").scrollHeight; return d;
+}
+function startSession(){
+  clearInterval(timerId);
+  $("orIntro").hidden = part.id !== 3;
+  if (part.id === 3){ $("orGo").hidden = true; $("orPrep").innerHTML = ""; const sh = $("orShuffle"); if (sh) sh.hidden = true; }
+  $("orSession").hidden = false; $("orEval").hidden = true;
+  $("orLog").innerHTML = ""; $("orLive").classList.remove("show"); history = [];
+  startTimer($("orTimer"), 0, false);
+  if (part.id === 3){
+    phase = "expose";
+    $("orPhase").textContent = "Ton exposé (environ 3 min)";
+    $("orMic").dataset.label = "Commencer l'exposé"; setMic($("orMic"), false);
+    $("orMic").disabled = false;
+  } else {
+    phase = "talk";
+    $("orPhase").textContent = part.name;
+    $("orMic").dataset.label = "Répondre"; setMic($("orMic"), false);
+    examinerTurn("(Début de l'épreuve. Commence.)");
+  }
+}
+async function examinerTurn(userText){
+  busy = true; $("orMic").disabled = true; $("orEnd").disabled = true;
+  history.push({role:"user", content:userText});
+  const wait = addLog("ex", "…");
+  try {
+    const reply = await askAI(sysFor(), history);
+    history.push({role:"assistant", content:reply});
+    wait.textContent = reply; wait.onclick = () => speak(reply);
+    speak(reply);
+  } catch(e){
+    history.pop();
+    wait.textContent = apiErr(e);
+  }
+  busy = false; $("orMic").disabled = false; $("orEnd").disabled = false;
+}
+$("orMic").onclick = () => {
+  if (busy) return;
+  listenLong($("orMic"), t => { $("orLive").textContent = t; $("orLive").classList.add("show"); }, (text, err) => {
+    $("orLive").classList.remove("show"); $("orLive").textContent = "";
+    if (!text){ addLog("ex", errMsg(err || "no-speech")); return; }
+    addLog("me", text);
+    if (phase === "expose"){
+      phase = "talk";
+      $("orPhase").textContent = "Questions de l'examinateur";
+      $("orMic").dataset.label = "Répondre"; setMic($("orMic"), false);
+      examinerTurn("[Exposé du candidat] " + text);
+    } else examinerTurn(text);
+  });
+};
+$("orQuit").onclick = () => { if (!busy) orReset(); };
+$("orEnd").onclick = async () => {
+  if (busy) return;
+  stopAll(); clearInterval(timerId);
+  const transcript = history.filter(m => !m.content.startsWith("(Début"))
+    .map(m => (m.role === "user" ? "Candidat : " : "Examinateur : ") + m.content.replace("[Exposé du candidat] ","")).join("\n");
+  if (!history.some(m => m.role === "user" && !m.content.startsWith("(Début"))){
+    $("orEval").hidden = false; $("orEval").innerHTML = "<p>Answer at least once before asking for an evaluation.</p>"; return;
+  }
+  const ctx = part.id === 2 ? `Situation : ${scen.sit}` : part.id === 3 ? `Document : ${docu.t}. ${docu.p}` : "";
+  const sys = `Tu es un correcteur expérimenté du DELF B1. On te donne la transcription, obtenue par reconnaissance vocale, d'une simulation de la ${part.name} de la production orale. Évalue le candidat selon les critères du DELF B1 pour cette partie : réalisation de la tâche, capacité à développer et à réagir, étendue du lexique, correction grammaticale, cohérence. La transcription peut contenir des erreurs de reconnaissance : des mots incohérents ou mal placés peuvent signaler une prononciation peu claire ; mentionne-les avec prudence dans "prononciation". Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour :
+{"niveau":"En dessous de B1" ou "B1 presque atteint" ou "B1 atteint" ou "Au-dessus de B1","resume":"2 phrases en anglais","forces":["2 ou 3 points en anglais"],"a_travailler":["2 ou 3 points en anglais"],"corrections":[{"dit":"phrase du candidat","mieux":"version correcte et naturelle"}],"prononciation":"1 ou 2 phrases en anglais","conseil":"un conseil concret en anglais pour la prochaine fois"}
+Maximum 5 corrections, choisies parmi les erreurs les plus utiles.`;
+  $("orEval").hidden = false; $("orEval").innerHTML = "<p>Évaluation en cours…</p>";
+  $("orEnd").disabled = true;
+  try {
+    const raw = await askAI(sys, [{role:"user", content:`${ctx}\nDurée : ${$("orTimer").textContent}\n\n${transcript}`}], true);
+    const ev = parseJSON(raw);
+    $("orEval").innerHTML = `<h2>Évaluation</h2><p><span class="level">${esc(ev.niveau || "")}</span></p><p>${esc(ev.resume || "")}</p>
+      <h4>Strengths</h4><ul>${(ev.forces||[]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <h4>To work on</h4><ul>${(ev.a_travailler||[]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      ${(ev.corrections||[]).length ? `<h4>Corrections</h4>${ev.corrections.map(c => `<p class="corr"><s>${esc(c.dit)}</s><br><b>${esc(c.mieux)}</b></p>`).join("")}` : ""}
+      <h4>Pronunciation</h4><p>${esc(ev.prononciation || "")}</p>
+      <h4>Next time</h4><p>${esc(ev.conseil || "")}</p>
+      <p class="fine">This is a practice estimate based on a speech transcript, not an official grade.</p>
+      <div class="row"><button class="btn primary" id="orRedo">Recommencer cette partie</button></div>`;
+  } catch(e){
+    $("orEval").innerHTML = `<p>${esc(apiErr(e))}</p><div class="row"><button class="btn" id="orRetryEval">Réessayer</button></div>`;
+    $("orRetryEval").onclick = $("orEnd").onclick;
+  }
+  $("orEnd").disabled = false;
+  const redo = $("orRedo"); if (redo) redo.onclick = () => { scen = null; docu = null; orReset(); };
+  $("orEval").scrollIntoView({behavior:"smooth", block:"start"});
+};
+
+/* =================== ÉCOUTE =================== */
+let ec = 0, ecPlays = 0, ecSel = -1, ecSents = [], ecAns = {};
+function ecRender(){
+  const it = LISTEN[ec];
+  ecPlays = 0; ecSel = -1;
+  $("ecCount").textContent = `Document ${ec+1} sur ${LISTEN.length}`;
+  const n = Object.keys(ecAns).length;
+  $("ecScore").textContent = n ? `${Object.values(ecAns).filter(Boolean).length} / ${n} bonnes réponses` : "";
+  $("ecPlays").textContent = "";
+  $("ecQ").textContent = it.q;
+  $("ecOpts").innerHTML = it.o.map((o,i) => `<button class="opt" data-i="${i}">${esc(o)}</button>`).join("");
+  $("ecReveal").hidden = true; $("ecAct").hidden = true; $("ecResult").classList.remove("show");
+  $("ecPrev").disabled = ec === 0;
+  $("ecOpts").querySelectorAll(".opt").forEach(b => b.onclick = () => {
+    if (!(ec in ecAns)) ecAns[ec] = +b.dataset.i === it.a;
+    $("ecOpts").querySelectorAll(".opt").forEach(x => { x.disabled = true; if (+x.dataset.i === it.a) x.classList.add("correct"); else if (x === b) x.classList.add("wrong"); });
+    const m = Object.keys(ecAns).length;
+    $("ecScore").textContent = `${Object.values(ecAns).filter(Boolean).length} / ${m} bonnes réponses`;
+    ecReveal(it);
+  });
+}
+function ecReveal(it){
+  ecSents = it.fr.match(/[^.!?]+[.!?]*/g).map(s => s.trim()).filter(Boolean);
+  $("ecText").innerHTML = ecSents.map((s,i) => `<span class="s" tabindex="0" role="button" data-i="${i}">${esc(s)}</span>`).join(" ");
+  $("ecText").querySelectorAll(".s").forEach(el => {
+    const pick = () => {
+      ecSel = +el.dataset.i;
+      $("ecText").querySelectorAll(".s").forEach(x => { x.classList.toggle("sel", x === el); x.textContent = ecSents[+x.dataset.i]; });
+      $("ecAct").hidden = false; $("ecResult").classList.remove("show");
+      speak(ecSents[ecSel]);
+    };
+    el.onclick = pick; el.onkeydown = e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(); } };
+  });
+  $("ecTrans").textContent = it.en;
+  $("ecReveal").hidden = false;
+}
+$("ecPlay").onclick = () => { ecPlays++; $("ecPlays").textContent = `Écoutes : ${ecPlays}`; speak(LISTEN[ec].fr); };
+$("ecPrev").onclick = () => { if (ec > 0){ stopAll(); ec--; ecRender(); } };
+$("ecNext").onclick = () => { stopAll(); ec = (ec+1) % LISTEN.length; ecRender(); };
+$("ecMic").onclick = () => listen($("ecMic"), (alts, err) => {
+  if (ecSel < 0) return;
+  if (!alts) return showError($("ecResult"), err || "no-speech");
+  const res = compare(ecSents[ecSel], alts);
+  renderWords($("ecText").querySelector(`.s[data-i="${ecSel}"]`), ecSents[ecSel], res.status);
+  showResult($("ecResult"), res);
+}, t => showLive($("ecResult"), t));
+$("ecGen").onclick = async () => {
+  const b = $("ecGen"); b.disabled = true; b.textContent = "Création…";
+  const sys = `Tu crées des exercices de compréhension orale de niveau DELF B1, en français standard de France. Crée un document court et réaliste (message vocal, annonce, extrait de radio, témoignage ou conversation rapportée) de 3 à 5 phrases, sur un thème de la vie quotidienne, du travail, des loisirs ou de la société. Écris les nombres en lettres. Évite ces sujets déjà utilisés : ${LISTEN.map(x => x.q).join(" / ")}. Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour : {"fr":"le texte","en":"traduction anglaise","q":"une question de compréhension","o":["option A","option B","option C"],"a":index de la bonne réponse (0, 1 ou 2)}`;
+  try {
+    const it = parseJSON(await askAI(sys, [{role:"user", content:"Nouveau document, s'il vous plaît."}], true));
+    if (!it.fr || !Array.isArray(it.o) || typeof it.a !== "number") throw new Error("bad");
+    LISTEN.push(it); ec = LISTEN.length - 1; ecRender();
+  } catch(e){ $("ecScore").textContent = e.message === "bad" || e instanceof SyntaxError ? "The new document came back malformed. Try again." : apiErr(e); }
+  b.disabled = false; b.textContent = "Nouveau document";
+};
+
+
+/* =================== PARCOURS : données =================== */
+const TENSES = ["présent","impératif","futur proche","passé récent","passé composé","imparfait","plus-que-parfait","futur simple","conditionnel présent","conditionnel passé","subjonctif présent"];
+const UNITS = [
+ {id:1, level:"A2", title:"Le présent et le futur proche", lessons:[
+  {theme:"Se présenter", grammar:"présent", en:"I am / I do / I am doing", can:"Talk about yourself using the present"},
+  {theme:"Ma journée", grammar:"présent", en:"I get up, I go, I take (irregular and reflexive verbs)", can:"Describe your routine with aller, faire, prendre and reflexive verbs"},
+  {theme:"Le week-end prochain", grammar:"futur proche", en:"I'm going to do", can:"Talk about your plans"},
+  {theme:"En ville", grammar:"impératif", en:"Go! / Let's go! / Don't go!", can:"Give instructions and directions"},
+  {theme:"Les nouvelles", grammar:"passé récent", en:"I have just done", can:"Say what has just happened"}]},
+ {id:2, level:"A2", title:"Raconter : le passé composé", lessons:[
+  {theme:"Le week-end dernier", grammar:"passé composé", en:"I did / I have done (with avoir)", can:"Say what you did"},
+  {theme:"Les voyages", grammar:"passé composé", en:"I went / I arrived (with être, agreement)", can:"Tell the story of a trip"},
+  {theme:"Hier matin", grammar:"passé composé", en:"I got up / I got dressed (reflexive verbs)", can:"Describe what you did yesterday"},
+  {theme:"Le sport", grammar:"passé composé", en:"I did, I took, I saw (irregular participles)", can:"Talk about past sports and activities"},
+  {theme:"Au restaurant", grammar:"passé composé", en:"I didn't eat it (negation and pronouns)", can:"Use negation and pronouns in the past"}]},
+ {id:3, level:"A2+", title:"L'imparfait", lessons:[
+  {theme:"Souvenirs d'enfance", grammar:"imparfait", en:"I used to do", can:"Describe past habits"},
+  {theme:"Une scène du passé", grammar:"imparfait", en:"It was / I was doing (descriptions)", can:"Describe the background of a past scene"},
+  {theme:"Une histoire", grammar:"passé composé et imparfait", en:"Event (did) vs background (was doing)", can:"Choose between passé composé and imparfait"},
+  {theme:"Un imprévu", grammar:"passé composé et imparfait", en:"I was doing X when Y happened", can:"Tell a story with an interruption"},
+  {theme:"Ma vie ici", grammar:"présent", en:"I have lived here for 3 years = j'habite ici depuis 3 ans", can:"Use depuis + présent and il y a + passé composé"}]},
+ {id:4, level:"B1-", title:"Futur, conditionnel, plus-que-parfait", lessons:[
+  {theme:"Projets d'avenir", grammar:"futur simple", en:"I will do", can:"Talk about your future"},
+  {theme:"Les études", grammar:"futur simple", en:"When I am (= quand je serai) + irregular futures", can:"Use quand + futur"},
+  {theme:"Le bien-être", grammar:"conditionnel présent", en:"I would / you should", can:"Ask politely and give advice"},
+  {theme:"La ville de demain", grammar:"conditionnel présent", en:"If I had… I would… (si + imparfait)", can:"Imagine hypothetical situations"},
+  {theme:"Raconter une expérience", grammar:"plus-que-parfait", en:"I had done", can:"Say what had happened before"}]},
+ {id:5, level:"B1", title:"Le subjonctif", lessons:[
+  {theme:"L'environnement", grammar:"subjonctif présent", en:"It's necessary that we do (il faut que)", can:"Say what must be done"},
+  {theme:"Les émotions", grammar:"subjonctif présent", en:"I'm happy that you are here", can:"Express feelings about others"},
+  {theme:"Donner son avis", grammar:"subjonctif présent", en:"I think he is (indicatif) vs I don't think he is (subjonctif)", can:"Give your opinion"},
+  {theme:"Les écrans", grammar:"subjonctif présent", en:"so that, before, although (pour que, avant que, bien que)", can:"Build complex arguments"},
+  {theme:"Au travail", grammar:"concordance des temps", en:"He said he would come (reported speech)", can:"Report what someone said"}]},
+ {id:6, level:"B1", title:"Maîtriser tous les temps", lessons:[
+  {theme:"Les regrets", grammar:"conditionnel passé", en:"I would have done / I should have", can:"Express regrets"},
+  {theme:"Et si…", grammar:"conditionnel passé", en:"If I had known, I would have… (si + plus-que-parfait)", can:"Talk about what could have happened"},
+  {theme:"Un souvenir marquant", grammar:"passé composé, imparfait, plus-que-parfait", en:"All past tenses together", can:"Tell a detailed past story"},
+  {theme:"Demain et après", grammar:"futur, conditionnel, subjonctif", en:"Future, hypothesis and necessity", can:"Talk about the future and possibilities"},
+  {theme:"Débattre", grammar:"tous les temps", en:"Mixed review", can:"Argue for your opinion using all tenses"}]}
+];
+const NODES = [];
+UNITS.forEach(u => {
+  u.lessons.forEach((l,i) => NODES.push({...l, id:`${u.id}-${i+1}`, num:i+1, unit:u, kind:"lesson"}));
+  NODES.push({id:`${u.id}-cp`, unit:u, kind:"cp", theme:`Bilan de l'unité ${u.id}`});
+});
+NODES.push({id:"exam", unit:UNITS[5], kind:"exam", theme:"Examen blanc DELF B1"});
+
+const SVG = {
+  check:'<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  cup:'<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 21h8M9 18h6"/></svg>',
+  flag:'<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'
+};
+const micHTML = (id, label, small) => `<button class="mic${small ? " small" : ""}" id="${id}" data-label="${label}">${SVG.mic}<span class="label">${label}</span></button>`;
+
+/* =================== PARCOURS : état =================== */
+function loadPG(){
+  let v = null; try { v = JSON.parse(localStorage.getItem("parcours-v1")); } catch(e){}
+  return Object.assign({lessons:{}, xp:0, streak:{last:null, count:0}, words:[], vocabEst:null, placed:null}, v || {});
+}
+let PG = loadPG();
+function savePG(){ try { localStorage.setItem("parcours-v1", JSON.stringify(PG)); } catch(e){} }
+const recOf = id => PG.lessons[id] || (PG.lessons[id] = {status:"", best:0, attempts:0, mistakes:[], words:[]});
+const isDone = s => s === "done" || s === "skipped";
+function nodeStatus(n){
+  const r = PG.lessons[n.id];
+  if (r && isDone(r.status)) return r.status;
+  const i = NODES.indexOf(n);
+  if (i === 0) return "open";
+  return isDone(nodeStatus(NODES[i-1])) ? "open" : "locked";
+}
+const dayStr = d => d.toLocaleDateString("en-CA");
+function bumpStreak(){
+  const t = dayStr(new Date()), y = dayStr(new Date(Date.now()-864e5));
+  if (PG.streak.last === t) return;
+  PG.streak.count = PG.streak.last === y ? PG.streak.count + 1 : 1;
+  PG.streak.last = t;
+}
+function streakNow(){
+  const t = dayStr(new Date()), y = dayStr(new Date(Date.now()-864e5));
+  return (PG.streak.last === t || PG.streak.last === y) ? PG.streak.count : 0;
+}
+
+/* =================== PARCOURS : arbre =================== */
+function renderTree(){
+  const cur = NODES.find(n => nodeStatus(n) === "open");
+  const level = cur ? cur.unit.level : "B1";
+  $("pgStats").innerHTML = [[streakNow(),"jours de suite"],[PG.xp,"XP"],[PG.words.length,"mots appris"],[level,"niveau"]]
+    .map(([b,l]) => `<div class="stat"><b>${esc(b)}</b><span>${l}</span></div>`).join("");
+  $("pgKey").classList.toggle("show", !API.key);
+  const offs = [0,58,86,58,0,-58,-86,-58];
+  let html = "";
+  UNITS.forEach(u => {
+    const nodes = NODES.filter(n => n.unit === u && n.kind !== "exam");
+    const done = nodes.filter(n => isDone(nodeStatus(n))).length;
+    html += `<div class="unit-head"><div class="u-top"><span>Unité ${u.id}</span><span>${u.level}</span></div><h2>${esc(u.title)}</h2><div class="u-prog"><i style="width:${Math.round(done/nodes.length*100)}%"></i></div></div><div class="path">`;
+    const list = u.id === 6 ? [...nodes, NODES[NODES.length-1]] : nodes;
+    list.forEach((n,i) => {
+      const st = nodeStatus(n), r = PG.lessons[n.id];
+      const icon = st === "locked" ? SVG.lock : n.kind === "cp" ? SVG.cup : n.kind === "exam" ? SVG.flag : isDone(st) ? SVG.check : n.num;
+      const diff = r && (r.mistakes.length + r.words.length);
+      html += `<div class="node-wrap" style="transform:translateX(${offs[i % offs.length]}px)">
+        <button class="node ${st} ${n.kind}${n === cur ? " current" : ""}" data-id="${n.id}" aria-label="${esc(n.theme)}">${icon}${diff ? `<span class="badge" aria-label="${diff} difficultés">${diff > 9 ? "9+" : diff}</span>` : ""}</button>
+        <span class="node-label">${esc(n.theme)}${r && r.best ? `<br><b>${r.best} %</b>` : ""}</span></div>`;
+    });
+    html += `</div>`;
+  });
+  const ts = PG.tenses || {}, keys = TENSES.filter(t => ts[t] && ts[t].n);
+  if (keys.length) html += `<div class="card" style="margin-top:24px"><h2>Mes temps</h2><p class="hint">Your accuracy per tense across lessons, drills and corrections. Lowest first.</p><div class="results">${keys.sort((a,b) => ts[a].ok/ts[a].n - ts[b].ok/ts[b].n).map(t => { const pc = Math.round(ts[t].ok/ts[t].n*100); return `<div class="res-row"><span class="name">${esc(t)}</span><span class="pct">${pc} %</span><div class="bar"><i class="${pc < 70 ? "weak" : ""}" style="width:${pc}%"></i></div></div>`; }).join("")}</div></div>`;
+  $("tree").innerHTML = html;
+  $("tree").querySelectorAll(".node").forEach(b => b.onclick = () => openSheet(NODES.find(n => n.id === b.dataset.id)));
+}
+function scrollToCurrent(){
+  const c = $("tree").querySelector(".node.current");
+  if (c) c.scrollIntoView({behavior:"smooth", block:"center"});
+}
+
+/* Feuille de détails */
+function closeSheet(){ $("sheet").hidden = true; $("sheetBg").hidden = true; }
+$("sheetBg").onclick = closeSheet;
+function openSheet(n){
+  const st = nodeStatus(n), r = PG.lessons[n.id];
+  let h = `<p class="hint" style="margin:0 0 4px">Unité ${n.unit.id}, niveau ${n.unit.level}</p><h2>${esc(n.theme)}</h2>`;
+  if (n.kind === "lesson") h += `<p><b>Temps :</b> ${esc(n.grammar)} <span class="hint">≈ ${esc(n.en)}</span></p><p class="hint">Goal: ${esc(n.can)}.</p>`;
+  if (n.kind === "cp") h += `<p>A 12-question test covering the whole unit, with listening and speaking. Score 80 % to unlock the next unit.</p>`;
+  if (n.kind === "exam") h += `<p>Practise the real DELF B1 oral exam (3 parts) and the listening test.</p>`;
+  if (st === "locked" && n.kind !== "exam") h += `<p class="hint">Finish the previous step to unlock this one, or take the level test (Tests tab) to skip ahead.</p>`;
+  if (st === "skipped") h += `<p class="hint">Skipped thanks to the level test. You can still do it.</p>`;
+  if (r && r.attempts) h += `<p>Meilleur score : <b>${r.best} %</b> (${r.attempts} essai${r.attempts > 1 ? "s" : ""})</p>`;
+  if (r && (r.mistakes.length || r.words.length)){
+    h += `<h3>Mes difficultés</h3><ul class="diff">`;
+    r.mistakes.slice(-8).reverse().forEach(m => h += `<li><b>${esc(m.point || "Question")}</b><br><span class="hint">${esc(m.correct)}</span></li>`);
+    if (r.words.length) h += `<li><b>Prononciation</b><br><span class="hint">${esc(r.words.slice(-10).join(", "))}</span></li>`;
+    h += `</ul>`;
+  }
+  const btns = [];
+  if (n.kind === "exam"){
+    btns.push(["Examen oral", () => { closeSheet(); goTab("oral"); }, true]);
+    btns.push(["Compréhension orale", () => { closeSheet(); goTab("ecoute"); }]);
+  } else if (st !== "locked"){
+    const hasDiff = r && (r.mistakes.length || r.words.length);
+    if (n.kind === "lesson"){
+      if (st === "open") btns.push([r && r.draft ? "Continuer la leçon" : "Commencer la leçon", () => startLesson(n, false), true]);
+      else btns.push(["Refaire la leçon", () => startLesson(n, true), !hasDiff]);
+    } else {
+      btns.push([st === "open" ? "Passer le bilan" : "Repasser le bilan", () => startCheckpoint(n), !hasDiff || st === "open"]);
+    }
+    if (hasDiff) btns.unshift(["Réviser mes difficultés", () => startReview(n), true]);
+  }
+  btns.push(["Fermer", closeSheet]);
+  if (!API.key && n.kind !== "exam" && st !== "locked") h += `<p class="notice show" style="margin:0 0 12px">Add your DeepSeek API key in Réglages to generate lessons.</p>`;
+  h += `<div class="sheet-btns">${btns.map((b,i) => `<button class="btn${b[2] ? " primary" : ""}" data-b="${i}">${esc(b[0])}</button>`).join("")}</div>`;
+  $("sheet").innerHTML = h;
+  $("sheet").querySelectorAll("[data-b]").forEach(b => b.onclick = btns[+b.dataset.b][1]);
+  $("sheet").hidden = false; $("sheetBg").hidden = false;
+}
+function needKey(){
+  closeSheet(); closePlayer();
+  $("settings").classList.add("open"); $("settingsBtn").setAttribute("aria-expanded", true);
+  $("keyMsg").textContent = "Add your DeepSeek API key here to generate lessons and tests.";
+  window.scrollTo({top:0, behavior:"smooth"}); setTimeout(() => $("keyIn").focus(), 300);
+}
+
+/* =================== LECTEUR (écran de leçon) =================== */
+const PL = {steps:[], i:0, token:0, final:false};
+function shellOpen(){ $("player").classList.add("open"); document.body.style.overflow = "hidden"; }
+function openPlayer(steps){ PL.steps = steps; PL.i = 0; PL.final = false; shellOpen(); renderStep(); }
+function closePlayer(){
+  PL.token++; stopAll();
+  $("player").classList.remove("open"); document.body.style.overflow = "";
+  renderTree(); renderTests();
+}
+$("pClose").onclick = () => { if (PL.final || !PL.steps.length || confirm("Quitter ? Tu pourras reprendre la leçon plus tard.")) closePlayer(); };
+function resetFoot(){ $("pFoot").className = "p-foot"; $("pFb").innerHTML = ""; $("pFb").style.display = "none"; $("pSkip").hidden = true; }
+function foot(label, fn, enabled = true){ const b = $("pMain"); b.textContent = label; b.disabled = !enabled; b.onclick = fn; }
+function showFb(ok, html){ $("pFoot").className = "p-foot " + (ok ? "ok" : "bad"); $("pFb").innerHTML = html; $("pFb").style.display = "block"; }
+function skipBtn(label, fn){ const b = $("pSkip"); b.hidden = false; b.textContent = label; b.onclick = fn; }
+function renderStep(){
+  stopAll(); resetFoot();
+  $("pBar").style.width = Math.round(PL.i / Math.max(1, PL.steps.length) * 100) + "%";
+  const body = $("pBody"); body.innerHTML = ""; body.scrollTop = 0;
+  PL.steps[PL.i](body);
+}
+function nextStep(){ PL.i++; if (PL.i >= PL.steps.length) return closePlayer(); renderStep(); }
+function showLoading(title, sub){
+  PL.steps = []; shellOpen(); resetFoot();
+  $("pBar").style.width = "3%";
+  $("pBody").innerHTML = `<div class="loading"><div class="spin"></div><h2>${esc(title)}</h2><p class="hint">${esc(sub)}</p></div>`;
+  foot("Patiente…", null, false);
+}
+function showErr(e, retry){
+  resetFoot();
+  $("pBody").innerHTML = `<div class="loading"><h2>Oups</h2><p>${esc(apiErr(e))}</p></div>`;
+  foot("Réessayer", retry); skipBtn("Fermer", closePlayer);
+}
+
+/* Utilitaires d'exercice */
+const normAns = s => String(s).toLowerCase().replace(/[’`]/g,"'").replace(/[.,!?;:«»"()]/g,"").replace(/\s+/g," ").trim();
+const noAcc = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const splitS = t => (String(t).match(/[^.!?]+[.!?»"]*/g) || [t]).map(s => s.trim()).filter(Boolean);
+function correctText(it){
+  if (it.type === "choice" || it.type === "listen") return it.o[it.a];
+  if (it.type === "fill") return it.q.replace("___", it.answer);
+  if (it.type === "order") return it.words.join(" ");
+  return it.fr || "";
+}
+function qText(it){
+  if (it.type === "listen") return "(audio) " + it.audio + " " + it.q;
+  if (it.type === "order") return it.en || "";
+  return it.q || it.fr || "";
+}
+function cleanItems(arr){
+  return (Array.isArray(arr) ? arr : []).filter(it => {
+    if (!it || typeof it !== "object") return false;
+    if (it.type === "choice" || it.type === "listen")
+      return Array.isArray(it.o) && it.o.length >= 2 && Number.isInteger(it.a) && it.a >= 0 && it.a < it.o.length && it.q && (it.type === "choice" || it.audio);
+    if (it.type === "fill") return typeof it.q === "string" && it.q.includes("___") && it.answer;
+    if (it.type === "order") return Array.isArray(it.words) && it.words.length >= 3;
+    if (it.type === "speak") return typeof it.fr === "string" && it.fr.length > 3;
+    return false;
+  });
+}
+function tapSentences(el, text){
+  const ss = splitS(text);
+  el.innerHTML = ss.map((s,i) => `<span class="s" tabindex="0" role="button" data-i="${i}">${esc(s)}</span>`).join(" ");
+  el.querySelectorAll(".s").forEach(x => {
+    const go = () => { el.querySelectorAll(".s").forEach(y => y.classList.toggle("sel", y === x)); speak(ss[+x.dataset.i]); };
+    x.onclick = go; x.onkeydown = e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); go(); } };
+  });
+}
+
+/* Une étape = un exercice */
+function itemStep(it, c){ return body => {
+  const fin = (correct, your, extra = "") => {
+    c.results.push({it, correct, your});
+    if (correct === null) return nextStep();
+    const corr = correctText(it);
+    showFb(correct, `<p class="fb-title">${correct ? "Correct !" : "Pas tout à fait."}</p>${!correct && corr ? `<p>Bonne réponse : <i>${esc(corr)}</i></p>` : ""}${extra}${it.why ? `<p class="fb-why">${esc(it.why)}</p>` : ""}`);
+    $("pSkip").hidden = true;
+    foot("Continuer", nextStep);
+  };
+  const t = it.type;
+  if (t === "choice" || t === "listen"){
+    const head = t === "listen"
+      ? `<p class="p-kicker">Écoute et réponds</p><div class="row" style="margin:0 0 16px"><button class="btn primary" id="itPlay">Écouter</button><button class="btn" id="itSlow">Lentement</button></div>`
+      : `<p class="p-kicker">${esc(c.kicker || "Choisis la bonne réponse")}</p>${it.passage ? `<details class="passage" open><summary>${esc(it.passageTitle || "Le texte")}</summary><p>${esc(it.passage)}</p></details>` : ""}`;
+    body.innerHTML = head + `<p class="p-q">${esc(it.q)}</p><div class="opts">${it.o.map((o,i) => `<button class="opt" data-i="${i}">${esc(o)}</button>`).join("")}</div>`;
+    if (t === "listen"){ $("itPlay").onclick = () => speak(it.audio); $("itSlow").onclick = () => speak(it.audio, true); speak(it.audio); }
+    let sel = null;
+    const check = () => {
+      body.querySelectorAll(".opt").forEach(x => { x.disabled = true; x.classList.remove("picked"); if (+x.dataset.i === it.a) x.classList.add("correct"); else if (+x.dataset.i === sel) x.classList.add("wrong"); });
+      fin(sel === it.a, it.o[sel]);
+    };
+    body.querySelectorAll(".opt").forEach(b => b.onclick = () => { sel = +b.dataset.i; body.querySelectorAll(".opt").forEach(x => x.classList.toggle("picked", x === b)); foot("Vérifier", check, true); });
+    foot("Vérifier", check, false);
+    if (c.idk) skipBtn("Je ne sais pas", () => { body.querySelectorAll(".opt").forEach(x => { x.disabled = true; if (+x.dataset.i === it.a) x.classList.add("correct"); }); fin(false, "—"); });
+  }
+  else if (t === "fill"){
+    const parts = it.q.split("___");
+    body.innerHTML = `<p class="p-kicker">${/\(.+\)/.test(it.q) ? "Conjugue le verbe" : "Complète la phrase"}</p><p class="p-q">${esc(parts[0])}<span class="blank">?</span>${esc(parts.slice(1).join("___"))}</p>${it.en ? `<p class="hint">${esc(it.en)}</p>` : ""}
+      <input type="text" id="itIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Ta réponse" style="margin-top:8px;font-size:1.1rem">
+      <div class="accents">${["é","è","ê","à","â","ç","ù","î","ô","œ"].map(a => `<button class="acc" data-a="${a}">${a}</button>`).join("")}</div>`;
+    const inp = $("itIn");
+    let done = false;
+    const check = () => {
+      if (done || !inp.value.trim()) return; done = true; inp.disabled = true;
+      const answers = [it.answer, ...(Array.isArray(it.alt) ? it.alt : [])].map(normAns);
+      const v = normAns(inp.value);
+      const exact = answers.includes(v), near = !exact && answers.map(noAcc).includes(noAcc(v));
+      body.querySelector(".blank").textContent = it.answer;
+      fin(exact || near, inp.value, near ? `<p>Attention aux accents : <i>${esc(it.answer)}</i></p>` : "");
+    };
+    inp.oninput = () => foot("Vérifier", check, !!inp.value.trim());
+    inp.onkeydown = e => { if (e.key === "Enter") check(); };
+    body.querySelectorAll(".acc").forEach(b => { b.onmousedown = e => e.preventDefault(); b.onclick = () => { if (done) return; const s = inp.selectionStart ?? inp.value.length, en = inp.selectionEnd ?? s; inp.setRangeText(b.dataset.a, s, en, "end"); inp.focus(); inp.oninput(); }; });
+    foot("Vérifier", check, false);
+  }
+  else if (t === "order"){
+    const words = it.words.map(String);
+    let bank = shuffle(words.map((w,i) => i)), n = 0;
+    while (n++ < 6 && bank.every((v,i) => v === i)) bank = shuffle(bank);
+    let ans = [], locked = false;
+    body.innerHTML = `<p class="p-kicker">Remets les mots dans l'ordre</p><p class="p-q" style="font-family:var(--sans);font-size:1.1rem">${esc(it.en || "")}</p><div class="tray" id="tray"></div><div class="bank" id="bank"></div>`;
+    const check = () => { locked = true; const yours = ans.map(k => words[k]).join(" "); fin(normAns(yours) === normAns(words.join(" ")), yours); };
+    const draw = () => {
+      $("tray").innerHTML = ans.map((k,j) => `<button class="tile" data-j="${j}">${esc(words[k])}</button>`).join("") || `<span class="hint">Tap the words below in the right order</span>`;
+      $("bank").innerHTML = bank.map((k,j) => `<button class="tile" data-j="${j}">${esc(words[k])}</button>`).join("");
+      $("tray").querySelectorAll(".tile").forEach(b => b.onclick = () => { if (locked) return; bank.push(ans.splice(+b.dataset.j,1)[0]); draw(); });
+      $("bank").querySelectorAll(".tile").forEach(b => b.onclick = () => { if (locked) return; ans.push(bank.splice(+b.dataset.j,1)[0]); draw(); });
+      foot("Vérifier", check, bank.length === 0);
+    };
+    draw();
+  }
+  else if (t === "speak"){
+    body.innerHTML = `<p class="p-kicker">Lis à voix haute</p><p class="sentence" id="itS"></p><div class="row" style="margin-top:0"><button class="btn" id="itPlay">Modèle</button><button class="btn" id="itSlow">Lentement</button></div>${micHTML("itMic","Parler")}<div class="result" id="itRes" aria-live="polite"></div>`;
+    renderWords($("itS"), it.fr, null);
+    $("itPlay").onclick = () => speak(it.fr); $("itSlow").onclick = () => speak(it.fr, true);
+    skipBtn("Passer", () => fin(null));
+    foot("Parle d'abord", null, false);
+    if (!SR){ $("itRes").innerHTML = `<p class="hint" style="margin:0">Speech recognition isn't available in this browser, so this exercise is skipped.</p>`; $("itRes").classList.add("show"); foot("Continuer", () => fin(null)); }
+    $("itMic").onclick = () => listen($("itMic"), (alts, err) => {
+      if (!alts) return showError($("itRes"), err || "no-speech");
+      const res = compare(it.fr, alts);
+      renderWords($("itS"), it.fr, res.status);
+      const missed = it.fr.split(" ").filter((w,i) => res.status[i] === "miss").map(w => w.replace(/[.,!?;:«»"]/g,"")).filter(w => w.length > 2);
+      const ok = res.pct >= 70;
+      showResult($("itRes"), res);
+      skipBtn("Réessayer", renderStep);
+      foot("Continuer", () => { c.results.push({it, correct:ok, your:res.heard}); if (c.missed) c.missed.push(...missed); nextStep(); });
+    }, txt => showLive($("itRes"), txt));
+  }
+}; }
+
+/* Étapes d'apprentissage */
+const sectionStep = (title, sub, btn = "C'est parti") => body => {
+  body.innerHTML = `<div class="loading"><h1 class="p-title">${esc(title)}</h1><p>${esc(sub)}</p></div>`;
+  foot(btn, nextStep);
+};
+const vocabStep = (v, i, total) => body => {
+  body.innerHTML = `<p class="p-kicker">Mot nouveau ${i+1} sur ${total}</p>
+    <div class="word-card"><p class="wc-fr">${esc(v.fr)}</p><p class="wc-en">${esc(v.en || "")}</p><button class="btn" id="wcHear">Écouter</button></div>
+    ${v.ex ? `<p class="ex" id="wcEx" role="button" tabindex="0">${esc(v.ex)}</p><p class="hint">${esc(v.ex_en || "")}</p>` : ""}
+    <div class="row">${micHTML("wcMic","Dis le mot",true)}</div><div class="result" id="wcRes" aria-live="polite"></div>`;
+  speak(v.fr);
+  $("wcHear").onclick = () => speak(v.fr);
+  if (v.ex) $("wcEx").onclick = () => speak(v.ex);
+  $("wcMic").onclick = () => listen($("wcMic"), (alts, err) => {
+    if (!alts) return showError($("wcRes"), err || "no-speech");
+    showResult($("wcRes"), compare(v.fr, alts));
+  }, t => showLive($("wcRes"), t));
+  foot("Continuer", nextStep);
+};
+const listenIntroStep = L => body => {
+  body.innerHTML = `<p class="p-kicker">Écoute</p><h1 class="p-title" style="font-size:1.6rem">Compréhension orale</h1><p>${esc(L.intro || "")}</p>
+    <div class="row"><button class="btn primary" id="liP">Écouter</button><button class="btn" id="liS">Lentement</button></div>
+    <p class="hint" style="margin-top:14px">Listen as many times as you need, then answer the questions. You'll see the transcript afterwards.</p>`;
+  $("liP").onclick = () => speak(L.text); $("liS").onclick = () => speak(L.text, true);
+  foot("Répondre aux questions", nextStep);
+};
+const transcriptStep = L => body => {
+  body.innerHTML = `<p class="p-kicker">Transcription</p><p class="text" id="trT"></p><p class="hint" style="margin-top:12px">Tap a sentence to hear it again and repeat it out loud.</p>`;
+  tapSentences($("trT"), L.text);
+  foot("Continuer", nextStep);
+};
+const readStep = R => body => {
+  body.innerHTML = `<p class="p-kicker">Lecture</p><h1 class="p-title" style="font-size:1.6rem">${esc(R.title || "")}</h1><p class="text" id="rdT2"></p><p class="hint" style="margin-top:12px">Tap a sentence to hear it.</p>`;
+  tapSentences($("rdT2"), R.text);
+  foot("Répondre aux questions", nextStep);
+};
+const openSpeakStep = sp => body => {
+  body.innerHTML = `<p class="p-kicker">À toi de parler</p><p class="p-q">${esc(sp.prompt)}</p><p class="hint">${esc(sp.prompt_en || "")}</p>
+    <p class="hint">Answer out loud in 3 to 5 sentences. Tap the mic, speak, then tap again when you've finished.</p>
+    ${micHTML("osMic","Répondre")}<div class="live" id="osLive"></div><div id="osFb"></div>`;
+  foot("Continuer", nextStep); skipBtn("Passer", nextStep);
+  $("osMic").onclick = () => listenLong($("osMic"), t => { $("osLive").textContent = t; $("osLive").classList.add("show"); }, async (text, err) => {
+    if (!text){ $("osFb").innerHTML = `<p class="hint">${esc(errMsg(err || "no-speech"))}</p>`; return; }
+    $("osLive").textContent = text; $("osLive").classList.add("show");
+    $("osFb").innerHTML = `<p class="hint">Analyse en cours…</p>`;
+    try {
+      const fb = parseJSON(await askAI(`You are a friendly French teacher. Always answer with valid JSON only.`, [{role:"user", content:
+        `The learner (target: DELF B1) answered this question out loud: "${sp.prompt}". Their answer is a speech-recognition transcript, so ignore punctuation and obvious transcription errors.\nAnswer: "${text}"\nReturn JSON {"feedback":"2 or 3 sentences in English: what was good and the one thing to improve","corrected":"their answer rewritten in correct, natural French, keeping their ideas"}`}], true, 800));
+      $("osFb").innerHTML = `<div class="result show"><p>${esc(fb.feedback || "")}</p><p class="hint" style="margin:10px 0 4px">Version corrigée :</p><p class="ex">${esc(fb.corrected || "")}</p><button class="btn" id="osHear">Écouter</button></div>`;
+      $("osHear").onclick = () => speak(fb.corrected || "");
+    } catch(e){ $("osFb").innerHTML = `<p class="hint">${esc(apiErr(e))}</p>`; }
+  });
+};
+
+/* Enregistrer les difficultés */
+function addMistakes(r, results){
+  results.filter(x => x.correct === false && x.it.type !== "speak").forEach(x => {
+    const m = {point: x.it.point || "", q: qText(x.it), correct: correctText(x.it)};
+    if (!r.mistakes.some(y => y.q === m.q)) r.mistakes.push(m);
+  });
+  r.mistakes = r.mistakes.slice(-30);
+}
+function addWords(r, list){
+  (list || []).forEach(w => { const k = w.toLowerCase(); if (!r.words.includes(k)) r.words.push(k); });
+  r.words = r.words.slice(-20);
+}
+const score = results => { const v = results.filter(x => x.correct !== null); return v.length ? Math.round(v.filter(x => x.correct).length / v.length * 100) : 0; };
+function resultHTML(pct, pass, xp, wrongAll, extra = ""){
+  const seen = new Set(), wrong = wrongAll.filter(x => { const k = correctText(x.it); if (seen.has(k)) return false; seen.add(k); return true; });
+  return `<div class="center"><p class="p-kicker">${pass ? "Réussi !" : "Pas encore…"}</p><p class="big-score">${pct} %</p>
+    <p class="hint">${pass ? "" : "You need 80 % to pass. "}+${xp} XP</p></div>${extra}
+    ${wrong.length ? `<h3>À revoir</h3><ul class="diff">${wrong.slice(0,6).map(x => `<li><b>${esc(x.it.point || "Question")}</b><br><span class="hint">${esc(correctText(x.it))}</span></li>`).join("")}</ul><p class="hint">These are saved in "Mes difficultés" for this lesson.</p>` : ""}`;
+}
+
+/* =================== GÉNÉRATION =================== */
+const LESSON_SYS = `You are an expert teacher of French as a foreign language. You create short, engaging lessons (10 to 15 minutes) for an adult English speaker from Canada who is preparing for the DELF B1. Use standard France French, natural and correct. All explanations, instructions and translations are in English. Always answer with valid JSON only.`;
+const TEST_SYS = `You are an expert teacher of French as a foreign language who writes exercises and tests for an adult English speaker preparing for the DELF B1. Use standard France French. Explanations are in English. Always answer with valid JSON only.`;
+const ITEM_SCHEMA = `Item formats (use exactly these keys):
+- {"type":"choice","q":"question or sentence in French, may contain ___","o":["3 or 4 options"],"a":index of the correct option,"point":"short label of what is tested","why":"one short English sentence explaining the answer"}
+- {"type":"fill","q":"French sentence containing ___ where ONE word or short expression is missing","en":"English translation of the complete sentence","answer":"the missing text exactly","alt":["other acceptable answers, may be empty"],"point":"...","why":"..."}
+- {"type":"order","en":"English sentence","words":["its French translation split into words, IN THE CORRECT ORDER, punctuation attached to words"],"point":"...","why":"..."}
+- {"type":"listen","audio":"one or two French sentences that will be read aloud (the learner does not see them)","q":"question in French about what was heard","o":["3 options"],"a":index,"point":"...","why":"..."}
+- {"type":"speak","fr":"a French sentence of 6 to 14 words for the learner to read aloud","point":"prononciation"}
+Rules: exactly one correct answer per item, no ambiguity; for fill items the English translation must make the answer unique; write numbers in words; vary the position of the correct option.`;
+const diffNote = u => `Difficulty: unit ${u.id} of 6 on the path from A2 to B1 (unit 1 = easy A2, unit 6 = solid B1). Target level: ${u.level}.`;
+
+const TENSE_RULE = `For "point", use exactly one of these tense labels when the item tests a tense: ${TENSES.join(", ")}. Otherwise use a short label.
+For tense items of type "fill", the blank replaces the whole conjugated verb (with its auxiliary if any) and the infinitive is written in parentheses right after the blank, e.g. "Hier, je ___ (aller) au cinéma." with answer "suis allé" and alt ["suis allée"]. Give the gender/number variants in "alt".
+For tense items of type "choice", the options are the same verb conjugated in different tenses.`;
+
+function prevTenses(n){
+  const i = NODES.indexOf(n), seen = [];
+  NODES.slice(0, i).filter(x => x.kind === "lesson").forEach(x => { if (!seen.includes(x.grammar)) seen.push(x.grammar); });
+  return seen.filter(t => t !== n.grammar).slice(-5);
+}
+
+async function genA(n, r){
+  const weak = [...new Set((r.mistakes || []).slice(-10).map(m => m.point).filter(Boolean))];
+  const review = prevTenses(n);
+  const prompt = `Create lesson ${n.num} of unit ${n.unit.id} "${n.unit.title}". The learner struggles with tenses and wants to build an instinct for them.
+Theme: ${n.theme}
+Target tense / grammar: ${n.grammar} (English equivalent: ${n.en})
+Goal: ${n.can}
+Review tenses to mix in: ${review.join(", ") || "none yet"}
+${diffNote(n.unit)}
+Known words, do not teach again: ${PG.words.slice(-80).join(", ") || "none"}.
+${weak.length ? `Last time the learner struggled with: ${weak.join("; ")}. Give these extra attention.` : ""}
+Return JSON with exactly these keys:
+{"intro":"one English sentence: what the learner will be able to do",
+ "vocab":[8 items {"fr":"word (verbs in the infinitive, nouns with le/la/l'/un/une)","en":"English meaning","ex":"short French example using the TARGET tense","ex_en":"English translation"}] — at least 5 must be verbs useful for the theme,
+ "grammar":{"title":"name in French","anchor":"the English equivalent, very short","when":"when to use it, in English, 3 or 4 sentences, contrasting it with the tenses learners confuse it with","form":"how to form it, in English, 2 or 3 sentences","table":{"verb":"one infinitive from the vocab","rows":[["je","…"],["tu","…"],["il/elle","…"],["nous","…"],["vous","…"],["ils/elles","…"]]},"trap":"the most common mistake English speakers make with it, 1 or 2 sentences","examples":[4 items {"fr":"…","en":"…"}]},
+ "drills":[12 items, using the vocab verbs: 8 on the target tense, 4 that force a choice between the target tense and a review tense; types: 6 fill, 4 choice, 2 order],
+ "speaking":{"prompt":"open question in French that naturally requires the target tense, enough for 5 minutes of talking","prompt_en":"English translation","ideas":["4 short French ideas to talk about"]}}
+${ITEM_SCHEMA}
+${TENSE_RULE}`;
+  const A = parseJSON(await askAI(LESSON_SYS, [{role:"user", content:prompt}], true, 6000));
+  if (!Array.isArray(A.vocab) || A.vocab.length < 4 || !A.grammar || !A.speaking || !A.speaking.prompt) throw new Error("INCOMPLETE");
+  A.vocab = A.vocab.filter(v => v && v.fr);
+  A.drills = cleanItems(A.drills);
+  if (A.drills.length < 5) throw new Error("INCOMPLETE");
+  A.speaking.ideas = Array.isArray(A.speaking.ideas) ? A.speaking.ideas : [];
+  return A;
+}
+
+/* Statistiques par temps */
+const TN = TENSES.map(t => [t, noAcc(t.toLowerCase())]).sort((a,b) => b[1].length - a[1].length);
+function tenseOf(point){
+  const p = noAcc(String(point || "").toLowerCase());
+  const hit = TN.find(([,k]) => p.includes(k));
+  return hit ? hit[0] : null;
+}
+function recordTenses(results, corrections){
+  PG.tenses = PG.tenses || {};
+  const add = (pt, ok) => { const t = tenseOf(pt); if (!t) return; const s = PG.tenses[t] || (PG.tenses[t] = {ok:0, n:0}); s.n++; if (ok) s.ok++; };
+  (results || []).filter(x => x.correct !== null && x.it.type !== "speak").forEach(x => add(x.it.point, x.correct));
+  (corrections || []).forEach(c => add(c.point, false));
+}
+
+/* Étapes de la leçon */
+const introStep = (n, A) => body => {
+  body.innerHTML = `<p class="p-kicker">Unité ${n.unit.id}, niveau ${n.unit.level}</p><h1 class="p-title">${esc(n.theme)}</h1>
+    <p><span class="level">${esc(n.grammar)}</span> <span class="hint">≈ ${esc(n.en)}</span></p><p>${esc(A.intro || n.can)}</p>
+    <ol class="plan"><li>${A.vocab.length} new words</li><li>The tense, then ${A.drills.length} drills</li><li>Speak for about 5 minutes</li><li>Correction of what you said</li><li>Quiz built from your corrected answer (80 % to pass)</li></ol>`;
+  foot("Commencer", nextStep);
+};
+const grammarStep = (n, g) => body => {
+  const t = g.table && Array.isArray(g.table.rows) ? g.table : null;
+  body.innerHTML = `<p class="p-kicker">Le temps</p><h1 class="p-title" style="font-size:1.7rem">${esc(g.title || n.grammar)}</h1>
+    <p class="anchor">≈ English: <b>${esc(g.anchor || n.en)}</b></p>
+    <h3>When</h3><p>${esc(g.when || "")}</p>
+    <h3>How</h3><p>${esc(g.form || "")}</p>
+    ${t ? `<table class="conj"><caption>${esc(t.verb || "")}</caption>${t.rows.map(r => `<tr><td>${esc(r[0] || "")}</td><td>${esc(r[1] || "")}</td></tr>`).join("")}</table>` : ""}
+    ${g.trap ? `<div class="trap"><b>Common trap</b><br>${esc(g.trap)}</div>` : ""}
+    <h3>Exemples</h3>${(g.examples || []).map((e,i) => `<div class="ex-row" role="button" tabindex="0" data-i="${i}"><p class="ex">${esc(e.fr)}</p><p class="hint">${esc(e.en || "")}</p></div>`).join("")}
+    <p class="hint">Tap an example to hear it.</p>`;
+  body.querySelectorAll(".ex-row").forEach(r => r.onclick = () => speak(g.examples[+r.dataset.i].fr));
+  foot("Aux exercices", nextStep);
+};
+
+let oralTimer = null;
+const ORAL_GOAL = 300;
+const oralStep = (n, A, L) => body => {
+  const sp = A.speaking;
+  body.innerHTML = `<p class="p-kicker">À toi de parler (about 5 minutes)</p><p class="p-q">${esc(sp.prompt)}</p><p class="hint">${esc(sp.prompt_en || "")}</p>
+    ${sp.ideas.length ? `<ul class="plan" style="line-height:1.6">${sp.ideas.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    <p class="hint">Try to use the <b>${esc(n.grammar)}</b> as much as you can. Don't stop to fix mistakes: keep talking. Tap the mic to start and tap again to pause.</p>
+    <div class="row split" style="margin-top:6px"><span class="timer" id="oTime">0:00 / 5:00</span></div>
+    ${micHTML("oMic","Commencer à parler")}
+    <textarea id="oText" rows="7" placeholder="Your words appear here. You can also type or fix them."></textarea>`;
+  const ta = $("oText");
+  if (L.text) ta.value = L.text;
+  let secs = L.secs || 0;
+  clearInterval(oralTimer);
+  const upd = () => { const el = $("oTime"); if (!el){ clearInterval(oralTimer); return; } el.textContent = `${fmt(secs)} / 5:00`; el.classList.toggle("done", secs >= ORAL_GOAL); };
+  upd();
+  const words = () => ta.value.trim().split(/\s+/).filter(Boolean).length;
+  const submit = () => { clearInterval(oralTimer); stopAll(); L.text = ta.value.trim(); L.secs = secs; L.mode = "spoken"; L.result = null; nextStep(); };
+  const refresh = () => foot(words() < 15 ? "Parle encore un peu…" : "Corriger ma réponse", submit, words() >= 5);
+  ta.oninput = refresh; refresh();
+  skipBtn("Je ne peux pas parler", () => { clearInterval(oralTimer); stopAll(); L.mode = "skip"; L.text = ""; L.result = null; nextStep(); });
+  if (!SR) $("oMic").hidden = true;
+  $("oMic").onclick = () => {
+    const base = ta.value.trim();
+    if (!longRec){ clearInterval(oralTimer); oralTimer = setInterval(() => { secs++; upd(); }, 1000); }
+    listenLong($("oMic"), t => { ta.value = (base ? base + " " : "") + t; refresh(); }, (text) => {
+      clearInterval(oralTimer);
+      $("oMic").dataset.label = "Continuer à parler"; setMic($("oMic"), false);
+      if (text) ta.value = (base ? base + " " : "") + text;
+      refresh();
+    });
+  };
+};
+
+const correctionStep = (n, A, L, ctx) => body => {
+  const render = R => {
+    ctx.corrections = R.corrections;
+    const skip = L.mode === "skip";
+    body.innerHTML = `<p class="p-kicker">${skip ? "Exemple de réponse" : "Correction"}</p>
+      ${!skip && R.feedback ? `<p>${esc(R.feedback)}</p>` : ""}
+      ${skip ? `<p class="hint">Here is a model answer. Read it, listen to it, and notice the tenses: the quiz is built from it.</p>` : ""}
+      ${!skip && R.corrections.length ? `<h3>Tes erreurs (${R.corrections.length})</h3>${R.corrections.map(c => `<div class="corr"><s>${esc(c.wrong)}</s> → <b>${esc(c.right)}</b>${c.point ? ` <span class="tag" style="color:var(--blue)">${esc(c.point)}</span>` : ""}<br><span class="hint">${esc(c.why || "")}</span></div>`).join("")}` : ""}
+      ${!skip && !R.corrections.length ? `<p><b>No mistakes found. Excellent!</b></p>` : ""}
+      <h3>${skip ? "Le texte" : "Version corrigée"}</h3>
+      <div class="row" style="margin:0 0 10px"><button class="btn" id="cAll">Écouter tout</button></div>
+      <p class="text" id="cText"></p><p class="hint" style="margin-top:10px">Tap a sentence to hear it.</p>`;
+    tapSentences($("cText"), R.text);
+    $("cAll").onclick = () => speak(R.text);
+    if (!ctx.quizAdded){
+      ctx.quizAdded = true;
+      PL.steps.splice(PL.i + 1, 0, ...quizSteps(n, A, R.quiz, ctx));
+    }
+    foot("Passer au quiz", nextStep);
+  };
+  if (L.result) return render(L.result);
+  body.innerHTML = `<div class="loading"><div class="spin"></div><h2>${L.mode === "skip" ? "Écriture d'une réponse modèle…" : "Correction en cours…"}</h2><p class="hint">About 20 to 40 seconds.</p></div>`;
+  foot("Patiente…", null, false);
+  const tok = PL.token, at = PL.i;
+  const task = L.mode === "skip"
+    ? `The learner cannot speak right now. Write a model spoken answer (180 to 250 words, natural spoken French at level ${n.unit.level}) to this question: "${A.speaking.prompt}". Use the target tense "${n.grammar}" many times, plus some of these review tenses: ${prevTenses(n).join(", ") || "présent"}. Use some of these words: ${A.vocab.map(v => v.fr).join(", ")}.
+Return {"feedback":"","corrections":[],"text":"the model answer","quiz":[…]}`
+    : `The learner answered this question out loud: "${A.speaking.prompt}". Their answer is a speech-recognition transcript: ignore punctuation, capitals and obvious recognition errors (wrong homophones), and focus above all on VERB TENSES and conjugation, then other grammar.
+Answer: "${L.text}"
+Return {"feedback":"2 or 3 English sentences: what they did well and the main tense pattern to fix",
+ "corrections":[up to 12 items {"wrong":"the learner's words","right":"corrected words","point":"tense label if it's a tense or conjugation error, otherwise a short label","why":"one short English sentence"}], tense errors first,
+ "text":"their whole answer rewritten in correct, natural French, keeping their ideas and length",
+ "quiz":[…]}`;
+  const prompt = `Lesson: "${n.theme}", target tense: ${n.grammar}. ${diffNote(n.unit)}
+${task}
+"quiz": 10 items built from sentences of "text", in the order they appear: 7 "fill" items where the blank is a conjugated verb with its infinitive in parentheses, and 3 "choice" items where the options are the same verb in different tenses. ${L.mode === "skip" ? "Prioritise verbs in the target tense." : "Prioritise the verbs the learner got wrong, then other verbs in the target tense."} The "en" of fill items is the English translation of the sentence. The "why" explains the tense choice.
+${ITEM_SCHEMA}
+${TENSE_RULE}`;
+  askAI(LESSON_SYS, [{role:"user", content:prompt}], true, 6000).then(raw => {
+    const R = parseJSON(raw);
+    R.corrections = Array.isArray(R.corrections) ? R.corrections.filter(c => c && c.wrong && c.right) : [];
+    R.quiz = cleanItems(R.quiz).filter(it => it.type === "fill" || it.type === "choice");
+    if (!R.text || R.quiz.length < 5) throw new Error("INCOMPLETE");
+    if (tok !== PL.token || PL.i !== at) return;
+    L.result = R; render(R);
+  }).catch(e => {
+    if (tok !== PL.token || PL.i !== at) return;
+    resetFoot();
+    body.innerHTML = `<div class="loading"><h2>Oups</h2><p>${esc(apiErr(e))}</p></div>`;
+    foot("Réessayer", renderStep);
+    skipBtn("Retour", () => { PL.i--; renderStep(); });
+  });
+};
+
+/* =================== LEÇON =================== */
+async function startLesson(n, fresh){
+  closeSheet();
+  if (!API.key) return needKey();
+  const r = recOf(n.id);
+  if (fresh || (r.draft && !r.draft.v2)) delete r.draft;
+  if (r.draft && r.draft.A){ shellOpen(); return runLesson(n, r.draft.A); }
+  showLoading("Ta leçon se prépare…", "DeepSeek is writing a new lesson for you. This takes 30 to 60 seconds.");
+  const tok = ++PL.token;
+  try {
+    const A = await genA(n, r);
+    if (tok !== PL.token) return;
+    r.draft = {A, v2:true}; savePG();
+    runLesson(n, A);
+  } catch(e){ if (tok === PL.token) showErr(e, () => startLesson(n, fresh)); }
+}
+function runLesson(n, A){
+  const ctx = {drills:{results:[]}, quiz:{results:[]}, corrections:[], quizAdded:false};
+  const L = {text:"", secs:0, mode:"", result:null};
+  const steps = [introStep(n, A)];
+  A.vocab.forEach((v,i) => steps.push(vocabStep(v, i, A.vocab.length)));
+  steps.push(grammarStep(n, A.grammar));
+  steps.push(sectionStep("Entraînement", `${A.drills.length} drills on the ${n.grammar}, mixed with tenses you've already seen. Mistakes are saved as difficulties.`));
+  A.drills.forEach(it => steps.push(itemStep(it, ctx.drills)));
+  steps.push(oralStep(n, A, L));
+  steps.push(correctionStep(n, A, L, ctx));
+  openPlayer(steps);
+}
+function quizSteps(n, A, quiz, ctx){
+  return [sectionStep("Quiz", `${quiz.length} questions taken from the corrected text. Find the right tense. 80 % to pass.`),
+          ...quiz.map(it => itemStep(it, ctx.quiz)),
+          lessonResultStep(n, A, quiz, ctx)];
+}
+const lessonResultStep = (n, A, quiz, ctx) => body => {
+  PL.final = true;
+  const pct = score(ctx.quiz.results), pass = pct >= 80, r = recOf(n.id);
+  r.attempts++; r.best = Math.max(r.best, pct);
+  const all = [...ctx.drills.results, ...ctx.quiz.results];
+  addMistakes(r, all);
+  (ctx.corrections || []).forEach(c => { const m = {point:c.point || "", q:c.wrong, correct:c.right}; if (!r.mistakes.some(y => y.q === m.q)) r.mistakes.push(m); });
+  r.mistakes = r.mistakes.slice(-30);
+  recordTenses(all, ctx.corrections); ctx.corrections = [];
+  let xp = 5;
+  if (pass){
+    xp = r.status === "done" ? 10 : 20 + Math.round(pct / 10);
+    r.status = "done"; delete r.draft;
+    A.vocab.forEach(v => { if (!PG.words.includes(v.fr)) PG.words.push(v.fr); });
+  }
+  PG.xp += xp; bumpStreak(); savePG();
+  body.innerHTML = resultHTML(pct, pass, xp, all.filter(x => x.correct === false));
+  if (pass) foot("Terminer", closePlayer);
+  else {
+    foot("Refaire le quiz", () => { ctx.quiz.results = []; ctx.drills.results = []; openPlayer(quizSteps(n, A, shuffle(quiz.slice()), ctx)); });
+    skipBtn("Plus tard", closePlayer);
+  }
+};
+
+/* =================== RÉVISION DES DIFFICULTÉS =================== */
+async function startReview(n){
+  closeSheet();
+  if (!API.key) return needKey();
+  const r = recOf(n.id);
+  showLoading("Révision de tes difficultés…", "Creating exercises based on your mistakes.");
+  const tok = ++PL.token;
+  const where = n.kind === "lesson" ? `the lesson "${n.theme}" (grammar: ${n.grammar})` : `the end-of-unit test of unit ${n.unit.id} "${n.unit.title}"`;
+  const prompt = `The learner made these mistakes in ${where}. ${diffNote(n.unit)}
+${r.mistakes.slice(-12).map(m => `- point: ${m.point || "?"} | question: ${m.q} | correct answer: ${m.correct}`).join("\n") || "(none)"}
+${r.words.length ? `Words they pronounced unclearly: ${r.words.slice(-6).join(", ")}.` : ""}
+Create 8 new, different exercises that practise exactly these weak points at the same difficulty. Reuse the exact "point" labels given above.
+${r.words.length ? `Also add up to 3 "speak" items, each containing one of the unclear words, and set their "point" to that word.` : ""}
+${ITEM_SCHEMA}
+Return {"items":[...]}`;
+  try {
+    const items = cleanItems(parseJSON(await askAI(TEST_SYS, [{role:"user", content:prompt}], true, 3500)).items);
+    if (items.length < 3) throw new Error("INCOMPLETE");
+    if (tok !== PL.token) return;
+    const c = {results:[], missed:[]};
+    openPlayer([sectionStep("Révision", `${items.length} exercises on your weak points. Each point you get right is removed from your list.`), ...items.map(it => itemStep(it, c)), reviewResultStep(n, c)]);
+  } catch(e){ if (tok === PL.token) showErr(e, () => startReview(n)); }
+}
+const reviewResultStep = (n, c) => body => {
+  PL.final = true;
+  const r = recOf(n.id), pct = score(c.results);
+  c.results.filter(x => x.correct === true).forEach(x => {
+    const p = String(x.it.point || "").toLowerCase().trim();
+    if (!p) return;
+    r.mistakes = r.mistakes.filter(m => String(m.point).toLowerCase().trim() !== p);
+    r.words = r.words.filter(w => w !== p);
+  });
+  addMistakes(r, c.results); recordTenses(c.results);
+  PG.xp += 10; bumpStreak(); savePG();
+  const left = r.mistakes.length + r.words.length;
+  body.innerHTML = resultHTML(pct, true, 10, c.results.filter(x => x.correct === false),
+    `<p class="center" style="margin-top:12px">${left ? `${left} difficult${left > 1 ? "ies" : "y"} left for this lesson.` : "No difficulties left for this lesson. Bravo !"}</p>`);
+  body.querySelector(".p-kicker").textContent = "Révision terminée";
+  foot("Terminer", closePlayer);
+};
+
+/* =================== BILAN D'UNITÉ =================== */
+async function startCheckpoint(n){
+  closeSheet();
+  if (!API.key) return needKey();
+  showLoading("Bilan de l'unité…", "Creating your end-of-unit test.");
+  const tok = ++PL.token, u = n.unit;
+  const weak = u.lessons.flatMap((l,i) => ((PG.lessons[`${u.id}-${i+1}`] || {}).mistakes || []).slice(-3).map(m => m.point)).filter(Boolean);
+  const prompt = `Create the end-of-unit test for unit ${u.id} of 6, "${u.title}". ${diffNote(u)}
+It covers these lessons: ${u.lessons.map(l => `${l.theme} (${l.grammar})`).join("; ")}. Focus mainly on choosing and conjugating the right tense.
+${TENSE_RULE}
+${weak.length ? `Include some items on these weak points of the learner: ${[...new Set(weak)].join("; ")}.` : ""}
+Balance the items across the lessons; make them slightly harder than the lessons.
+${ITEM_SCHEMA}
+Return {"items":[12 items: 3 choice, 3 fill, 2 order, 3 listen, 1 speak]}`;
+  try {
+    const items = shuffle(cleanItems(parseJSON(await askAI(TEST_SYS, [{role:"user", content:prompt}], true, 4000)).items));
+    if (items.length < 8) throw new Error("INCOMPLETE");
+    if (tok !== PL.token) return;
+    runCheckpoint(n, items);
+  } catch(e){ if (tok === PL.token) showErr(e, () => startCheckpoint(n)); }
+}
+function runCheckpoint(n, items){
+  const c = {results:[], missed:[]};
+  openPlayer([sectionStep(`Bilan de l'unité ${n.unit.id}`, `${items.length} questions on the whole unit. Score 80 % to unlock the next unit.`), ...items.map(it => itemStep(it, c)), cpResultStep(n, items, c)]);
+}
+const cpResultStep = (n, items, c) => body => {
+  PL.final = true;
+  const r = recOf(n.id), pct = score(c.results), pass = pct >= 80;
+  r.attempts++; r.best = Math.max(r.best, pct);
+  addMistakes(r, c.results); addWords(r, c.missed); recordTenses(c.results);
+  let xp = 5;
+  if (pass){ xp = r.status === "done" ? 10 : 40; r.status = "done"; }
+  PG.xp += xp; bumpStreak(); savePG();
+  body.innerHTML = resultHTML(pct, pass, xp, c.results.filter(x => x.correct === false),
+    pass && n.unit.id < 6 ? `<p class="center" style="margin-top:12px">Unit ${n.unit.id + 1} is unlocked.</p>` : pass ? `<p class="center" style="margin-top:12px">You've finished the path. Time for the mock exam!</p>` : "");
+  if (pass) foot("Terminer", closePlayer);
+  else { foot("Refaire le bilan", () => runCheckpoint(n, shuffle(items.slice()))); skipBtn("Plus tard", closePlayer); }
+};
+
+/* =================== TESTS =================== */
+function renderTests(){
+  if (PG.placed){
+    const u = UNITS[PG.placed.unit - 1];
+    $("lvLast").innerHTML = `<h3>Dernier résultat</h3><p>Recommended start: <b>Unité ${u.id}, ${esc(u.title)}</b> (${u.level}), on ${esc(new Date(PG.placed.date).toLocaleDateString("fr-FR", {day:"numeric", month:"long"}))}.</p>`;
+  }
+  if (PG.vocabEst){
+    $("vcLast").innerHTML = `<h3>Dernier résultat</h3><p>About <b>${PG.vocabEst.est.toLocaleString("fr-FR")} words</b>, on ${esc(new Date(PG.vocabEst.date).toLocaleDateString("fr-FR", {day:"numeric", month:"long"}))}.</p>`;
+  }
+}
+$("lvStart").onclick = async function startLevel(){
+  if (!API.key) return needKey();
+  showLoading("Test de niveau…", "Creating your placement test.");
+  const tok = ++PL.token;
+  const prompt = `Create a French placement test with 18 items, exactly 3 per level:
+level 1 = easy A2 (présent, articles, everyday vocabulary); level 2 = A2 (passé composé with avoir, possessives, imperative, object pronouns); level 3 = A2+ (passé composé with être, imparfait, futur proche, comparatives); level 4 = B1- (passé composé vs imparfait, y and en, futur simple, qui/que/où); level 5 = B1 (opinions, subjonctif after il faut que, conditionnel, si + imparfait, connectors); level 6 = solid B1 (concession, dont, plus-que-parfait, reported speech, formal register).
+Use only "choice" and "listen" items, about one third "listen". Add the key "level" (1 to 6) to every item. Order from easiest to hardest.
+${ITEM_SCHEMA}
+Return {"items":[...]}`;
+  try {
+    const items = cleanItems(parseJSON(await askAI(TEST_SYS, [{role:"user", content:prompt}], true, 4000)).items).filter(it => it.level >= 1 && it.level <= 6);
+    if (items.length < 12) throw new Error("INCOMPLETE");
+    if (tok !== PL.token) return;
+    const c = {results:[], idk:true};
+    openPlayer([sectionStep("Test de niveau", `${items.length} questions, from easy to hard. Tap "Je ne sais pas" instead of guessing: it makes the result more accurate.`), ...items.map(it => itemStep(it, c)), levelResultStep(c)]);
+  } catch(e){ if (tok === PL.token) showErr(e, () => $("lvStart").onclick()); }
+};
+const levelResultStep = c => body => {
+  PL.final = true;
+  let place = 6;
+  const rows = UNITS.map(u => {
+    const rs = c.results.filter(x => x.it.level === u.id), ok = rs.filter(x => x.correct).length;
+    return {u, ok, n: rs.length};
+  });
+  for (const row of rows){ if (row.n && row.ok / row.n < 0.67){ place = row.u.id; break; } }
+  PG.placed = {date: new Date().toISOString(), unit: place}; savePG();
+  const u = UNITS[place - 1];
+  body.innerHTML = `<div class="center"><p class="p-kicker">Résultat</p><p class="big-score" style="font-size:2.4rem">Unité ${place}</p><p>${esc(u.title)} (${u.level})</p></div>
+    <div class="results" style="margin-top:18px">${rows.map(row => `<div class="res-row"><span class="name">Unité ${row.u.id} <span class="hint">${row.u.level}</span></span><span class="pct">${row.ok}/${row.n}</span><div class="bar"><i class="${row.n && row.ok/row.n < .67 ? "weak" : ""}" style="width:${row.n ? Math.round(row.ok/row.n*100) : 0}%"></i></div></div>`).join("")}</div>
+    <p class="hint" style="margin-top:14px">${place > 1 ? `Starting at unit ${place} marks the earlier units as skipped. You can still open them any time.` : "Start at the beginning of the path."}</p>`;
+  if (place > 1){
+    foot(`Commencer à l'unité ${place}`, () => {
+      NODES.forEach(n => { if (n.kind !== "exam" && n.unit.id < place){ const r = recOf(n.id); if (r.status !== "done") r.status = "skipped"; } });
+      savePG(); closePlayer(); goTab("parcours"); setTimeout(scrollToCurrent, 300);
+    });
+    skipBtn("Garder ma progression", closePlayer);
+  } else foot("Terminer", () => { closePlayer(); goTab("parcours"); });
+};
+$("vcStart").onclick = async function startVocab(){
+  if (!API.key) return needKey();
+  showLoading("Test de vocabulaire…", "Creating 30 words of different frequencies.");
+  const tok = ++PL.token;
+  const prompt = `Create a French vocabulary size test with 30 items: 6 words from each frequency band.
+band 1 = among the 500 most common French words; band 2 = ranks 500 to 1500; band 3 = ranks 1500 to 3000; band 4 = ranks 3000 to 5000; band 5 = ranks 5000 to 8000.
+Use single words: nouns with their article, verbs in the infinitive, adjectives, adverbs. Avoid words that are identical in English.
+Each item: {"type":"choice","q":"the French word","o":["4 English meanings, one correct, plausible distractors"],"a":index,"band":1 to 5,"point":"the French word","why":"a short French example sentence using the word"}
+Mix the bands randomly. Return {"items":[...]}`;
+  try {
+    const items = cleanItems(parseJSON(await askAI(TEST_SYS, [{role:"user", content:prompt}], true, 4000)).items).filter(it => it.band >= 1 && it.band <= 5);
+    if (items.length < 20) throw new Error("INCOMPLETE");
+    if (tok !== PL.token) return;
+    const c = {results:[], idk:true, kicker:"Que veut dire ce mot ?"};
+    openPlayer([sectionStep("Test de vocabulaire", `${items.length} words. Tap "Je ne sais pas" if you don't know a word: guessing makes the estimate less accurate.`), ...items.map(it => itemStep(it, c)), vocabResultStep(c)]);
+  } catch(e){ if (tok === PL.token) showErr(e, () => $("vcStart").onclick()); }
+};
+const vocabResultStep = c => body => {
+  PL.final = true;
+  const sizes = [500, 1000, 1500, 2000, 3000];
+  let est = 0;
+  const rows = sizes.map((s,i) => {
+    const rs = c.results.filter(x => x.it.band === i+1), ok = rs.filter(x => x.correct).length;
+    if (rs.length) est += s * ok / rs.length;
+    return {i, ok, n: rs.length};
+  });
+  est = Math.round(est / 50) * 50;
+  PG.vocabEst = {date: new Date().toISOString(), est}; savePG();
+  const msg = est < 1000 ? "Around A1 to A2." : est < 2000 ? "Around A2." : est < 3000 ? "Getting close to B1." : "In the B1 range or above.";
+  const labels = ["500 most common","500 to 1,500","1,500 to 3,000","3,000 to 5,000","5,000 to 8,000"];
+  body.innerHTML = `<div class="center"><p class="p-kicker">Estimation</p><p class="big-score" style="font-size:2.6rem">≈ ${est.toLocaleString("fr-FR")} mots</p><p>${msg}</p></div>
+    <div class="results" style="margin-top:18px">${rows.map(r => `<div class="res-row"><span class="name">${labels[r.i]}</span><span class="pct">${r.ok}/${r.n}</span><div class="bar"><i style="width:${r.n ? Math.round(r.ok/r.n*100) : 0}%"></i></div></div>`).join("")}</div>
+    <p class="hint" style="margin-top:14px">B1 is often described as roughly 2,500 to 3,500 words. This is a rough estimate from 30 words, not a precise measure.</p>`;
+  foot("Terminer", closePlayer);
+};
+
+/* =================== VERSIONS =================== */
+// To publish an update: raise APP_VERSION and add an entry at the top of CHANGELOG.
+const APP_VERSION = 4;
+const CHANGELOG = [
+  {v:4, date:"25 Nov 2026", items:[
+    "Lessons are rebuilt around tenses: new words → the tense with its English equivalent → drills that mix in tenses you've already learned → speak for about 5 minutes → correction of what you said → quiz built from your corrected answer.",
+    "\"Je ne peux pas parler\" lets you skip speaking: the app writes a model answer and the quiz is built from it.",
+    "New 30-lesson path, from the présent to the subjonctif and the conditionnel passé.",
+    "New \"Mes temps\" card under the path shows your accuracy for each tense.",
+    "Speaking for a long time no longer cuts off after a few minutes.",
+    "This pop-up: you'll see what changed after each update."]},
+  {v:3, date:"Nov 2026", items:["Learning path with units, lessons, unit tests and saved difficulties.","Level test and vocabulary test."]},
+  {v:2, date:"Nov 2026", items:["Fixed: on iPhone, the app said \"Je n'ai rien entendu\" even when it heard you."]},
+  {v:1, date:"Nov 2026", items:["First version: pronunciation diagnostic, sounds, DELF oral and listening."]}
+];
+function showWhatsNew(since){
+  const list = CHANGELOG.filter(c => c.v > since);
+  $("wnTitle").textContent = since ? `Version ${APP_VERSION} : quoi de neuf ?` : "Nouveautés";
+  $("wnBody").innerHTML = (list.length ? list : CHANGELOG).map(c => `<h3 style="margin:14px 0 2px">Version ${c.v} <span class="hint" style="font-weight:400">${esc(c.date)}</span></h3><ul>${c.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`).join("");
+  $("whatsNew").hidden = false;
+  $("wnOk").focus();
+}
+$("wnOk").onclick = () => { $("whatsNew").hidden = true; };
+$("whatsNew").onclick = e => { if (e.target === $("whatsNew")) $("whatsNew").hidden = true; };
+$("verLabel").textContent = `Version ${APP_VERSION}`;
+$("verBtn").onclick = () => showWhatsNew(0);
+(function checkVersion(){
+  let seen = null; try { seen = parseInt(localStorage.getItem("app-version") || "", 10); } catch(e){}
+  const existing = (() => { try { return !!(localStorage.getItem("parcours-v1") || localStorage.getItem("ds-key") || localStorage.getItem("bilan-v1")); } catch(e){ return false; } })();
+  if (!seen && existing) seen = 3;
+  if (seen && seen < APP_VERSION) setTimeout(() => showWhatsNew(seen), 600);
+  try { localStorage.setItem("app-version", APP_VERSION); } catch(e){}
+})();
+
+/* =================== DÉMARRAGE =================== */
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+if (isIOS && (navigator.standalone || matchMedia("(display-mode: standalone)").matches)){
+  $("noSR").textContent = "On iPhone, the microphone doesn't work when the app opens full screen from the home screen. Open the app's address in Safari instead.";
+  $("noSR").classList.add("show");
+}
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+soSelect(SOUNDS[0].id);
+orReset();
+ecRender();
+renderTests();
+goTab("parcours");
+setTimeout(scrollToCurrent, 400);
+$("keySave").addEventListener("click", renderTree);
+fetchStored("bilan-v1").then(v => {
+  if (!v) return;
+  saved = v; soRenderChips();
+  const d = new Date(v.date).toLocaleDateString("fr-FR", {day:"numeric", month:"long"});
+  $("biPrev").innerHTML = `<h3>Dernier bilan, le ${esc(d)}</h3><div class="results" id="biPrevRes"></div>`;
+  showBilan($("biPrevRes"), v.results, true);
+  $("biStart").textContent = "Refaire le bilan";
+  const weakest = SOUNDS.slice().sort((a,b) => v.results[a.id]-v.results[b.id])[0];
+  soSelect(weakest.id);
+});
+</script>
+</body>
+</html>
